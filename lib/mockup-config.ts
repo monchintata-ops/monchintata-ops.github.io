@@ -29,7 +29,7 @@ export const MOCKUP_TEMPLATES: Record<string, MockupTemplate> = {
     id: 'gorra',
     label: 'Gorra',
     baseImage: '/mockups/MockupGorraNegra.png',
-    printArea: { x: 620, y: 520, width: 1640, height: 850 },
+    printArea: { x: 866, y: 648, width: 1148, height: 595 },
   },
   taza: {
     id: 'taza',
@@ -41,6 +41,6 @@ export const MOCKUP_TEMPLATES: Record<string, MockupTemplate> = {
     id: 'termo',
     label: 'Termo',
     baseImage: '/mockups/MockupThermoNegro.png',
-    printArea: { x: 235, y: 405, width: 555, height: 850 },
+    printArea: { x: 220, y: 405, width: 330, height: 850 },
   },
 };

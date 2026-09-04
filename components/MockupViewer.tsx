@@ -48,6 +48,8 @@ export default function MockupViewer({ product, defaultProduct = 'camisa-negra' 
 
         canvas.width = baseImage.naturalWidth || baseImage.width;
         canvas.height = baseImage.naturalHeight || baseImage.height;
+        context.imageSmoothingEnabled = true;
+        context.imageSmoothingQuality = 'high';
         context.clearRect(0, 0, canvas.width, canvas.height);
         context.drawImage(baseImage, 0, 0, canvas.width, canvas.height);
 
