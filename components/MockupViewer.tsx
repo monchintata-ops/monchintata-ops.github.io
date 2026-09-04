@@ -18,8 +18,8 @@ function cargarImagen(src: string): Promise<HTMLImageElement> {
   });
 }
 
-export default function MockupViewer({ designUrl, defaultProduct = 'camisa' }: MockupViewerProps) {
-  const initialProduct = MOCKUP_TEMPLATES[defaultProduct] ? defaultProduct : 'camisa';
+export default function MockupViewer({ designUrl, defaultProduct = 'camisa-negra' }: MockupViewerProps) {
+  const initialProduct = MOCKUP_TEMPLATES[defaultProduct] ? defaultProduct : 'camisa-negra';
   const [selectedProduct, setSelectedProduct] = useState(initialProduct);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -36,7 +36,7 @@ export default function MockupViewer({ designUrl, defaultProduct = 'camisa' }: M
       return undefined;
     }
 
-    const template = MOCKUP_TEMPLATES[selectedProduct] ?? MOCKUP_TEMPLATES.camisa;
+    const template = MOCKUP_TEMPLATES[selectedProduct] ?? MOCKUP_TEMPLATES['camisa-negra'];
     setLoading(true);
     setError(null);
 
