@@ -9,12 +9,12 @@ export default function ProductCard({ producto }: { producto: Producto }) {
     <article className="group flex min-w-0 flex-col overflow-hidden break-words rounded-xl border border-slate-800 bg-slate-900 transition hover:border-amber-500/50">
       <div className="relative overflow-hidden bg-slate-950 p-2">
         <MockupViewer designUrl={producto.imagen_preview_url} />
-        <span className="absolute top-2 right-2 bg-slate-900/80 backdrop-blur-md text-amber-400 text-xs px-2 py-1 rounded border border-amber-500/30">
-          DTF / UV-DTF
-        </span>
       </div>
       <Link href={`/producto/${producto.id}`} className="flex flex-1 flex-col justify-between gap-3 p-4">
         <div>
+          <span className="inline-flex rounded border border-amber-500/30 bg-slate-800/80 px-2 py-1 text-xs text-amber-400">
+            DTF / UV-DTF
+          </span>
           <h3 className="line-clamp-1 break-words font-semibold text-slate-200 transition group-hover:text-amber-400">
             {producto.titulo}
           </h3>

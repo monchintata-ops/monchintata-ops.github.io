@@ -66,7 +66,7 @@ export default function MockupViewer({ designUrl, defaultProduct = 'camisa-negra
 
   return (
     <div className="flex w-full flex-col items-center gap-3">
-      <div className="flex flex-wrap justify-center gap-2" role="group" aria-label="Tipo de producto">
+      <div className="relative z-10 flex flex-wrap justify-center gap-1.5" role="group" aria-label="Tipo de producto">
         {Object.values(MOCKUP_TEMPLATES).map((template) => (
           <button
             key={template.id}
