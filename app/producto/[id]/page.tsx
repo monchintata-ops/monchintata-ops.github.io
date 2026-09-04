@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import Header from '@/components/Header';
 import CheckoutModal from '@/components/CheckoutModal';
-import ProductPreview from '@/components/ProductPreview';
+import MockupViewer from '@/components/MockupViewer';
 import { getProductoDetalle } from '@/lib/productos';
 import type { Metadata } from 'next';
 
@@ -63,12 +63,8 @@ export default async function ProductoDetallePage({ params }: ProductoPageProps)
           </div>
         ) : (
           <div className="grid min-w-0 grid-cols-1 gap-8 lg:grid-cols-2">
-            <div className="flex min-h-[320px] items-center justify-center overflow-hidden rounded-2xl border border-slate-800 bg-neutral-100 p-6 lg:min-h-[520px]">
-              <ProductPreview
-                src={producto.imagen_preview_url}
-                alt={producto.titulo}
-                className="max-h-[640px] w-full object-contain"
-              />
+            <div className="flex min-h-[320px] items-center justify-center overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 p-6 lg:min-h-[520px]">
+              <MockupViewer designUrl={producto.imagen_preview_url} />
             </div>
 
             <div className="flex min-w-0 flex-col justify-center gap-6">
