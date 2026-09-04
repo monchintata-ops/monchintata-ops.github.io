@@ -6,6 +6,8 @@ import { esUuid } from '@/lib/uuid';
 
 const PRODUCTO_COLUMNS =
   'id, titulo, descripcion, precio, imagen_preview_url, diseno_mockup_url, archivo_r2_key, categoria, creado_en';
+const PRODUCTO_COLUMNS_LEGACY =
+  'id, titulo, descripcion, precio, imagen_preview_url, archivo_r2_key, categoria, creado_en';
 
 export type ProductoInput = {
   titulo: string;
@@ -139,10 +141,20 @@ export async function limpiarDuplicados(): Promise<{
     return { conservados: 0, eliminados: 0, error: 'Falta SUPABASE_SERVICE_ROLE_KEY en .env.local' };
   }
 
-  const { data, error } = await getSupabaseAdmin()
+  const consulta = getSupabaseAdmin()
     .from('productos')
     .select(PRODUCTO_COLUMNS)
     .order('creado_en', { ascending: true });
+  let { data, error } = await consulta;
+
+  if (error && /diseno_mockup_url|column .* does not exist/i.test(error.message)) {
+    const legacy = await getSupabaseAdmin()
+      .from('productos')
+      .select(PRODUCTO_COLUMNS_LEGACY)
+      .order('creado_en', { ascending: true });
+    data = legacy.data?.map((item) => ({ ...item, diseno_mockup_url: null })) ?? null;
+    error = legacy.error;
+  }
 
   if (error) {
     return { conservados: 0, eliminados: 0, error: error.message };
@@ -166,7 +178,13 @@ export async function limpiarDuplicados(): Promise<{
     }
 
     const preferido =
-      lista.find((item) => String(item.archivo_r2_key || '').trim()) || lista[lista.length - 1];
+      lista.find(
+        (item) =>
+          String(item.diseno_mockup_url || item.imagen_preview_url || '').trim() &&
+          String(item.archivo_r2_key || '').trim()
+      ) ||
+      lista.find((item) => String(item.diseno_mockup_url || item.imagen_preview_url || '').trim()) ||
+      lista[lista.length - 1];
     idsConservar.push(preferido.id);
     for (const extra of lista) {
       if (extra.id !== preferido.id) {
