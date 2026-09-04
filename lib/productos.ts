@@ -6,6 +6,8 @@ import { esUuid } from '@/lib/uuid';
 
 const PRODUCTO_LIST_COLUMNS =
   'id, titulo, descripcion, precio, imagen_preview_url, diseno_mockup_url, archivo_r2_key, categoria, creado_en';
+const PRODUCTO_LIST_COLUMNS_LEGACY =
+  'id, titulo, descripcion, precio, imagen_preview_url, archivo_r2_key, categoria, creado_en';
 
 function clienteCatalogo() {
   // En el servidor usamos service role para no chocar con RLS del catálogo público.
@@ -20,10 +22,20 @@ export async function getProductos(): Promise<{ productos: Producto[]; error: st
     };
   }
 
-  const { data, error } = await clienteCatalogo()
+  const consulta = clienteCatalogo()
     .from('productos')
     .select(PRODUCTO_LIST_COLUMNS)
     .order('titulo', { ascending: true });
+  let { data, error } = await consulta;
+
+  if (error && /diseno_mockup_url|column .* does not exist/i.test(error.message)) {
+    const legacy = await clienteCatalogo()
+      .from('productos')
+      .select(PRODUCTO_LIST_COLUMNS_LEGACY)
+      .order('titulo', { ascending: true });
+    data = legacy.data?.map((item) => ({ ...item, diseno_mockup_url: null })) ?? null;
+    error = legacy.error;
+  }
 
   if (error) {
     return { productos: [], error: error.message };
