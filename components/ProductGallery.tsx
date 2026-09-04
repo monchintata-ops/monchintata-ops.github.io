@@ -4,11 +4,12 @@ import { useState } from 'react';
 import MockupViewer from '@/components/MockupViewer';
 import ProductPreview from '@/components/ProductPreview';
 import { MOCKUP_TEMPLATES } from '@/lib/mockup-config';
+import type { Producto } from '@/lib/types';
 
-type GallerySelection = 'preview' | 'camisa-negra' | 'camisa-blanca';
+type GallerySelection = 'preview' | string;
 
 interface ProductGalleryProps {
-  designUrl: string;
+  product: Pick<Producto, 'imagen_preview_url' | 'diseno_mockup_url' | 'diseno_corte_url' | 'logo_url'>;
   title: string;
 }
 
@@ -16,18 +17,21 @@ const options: Array<{ id: GallerySelection; label: string; thumbnail?: string }
   { id: 'preview', label: 'Diseño limpio' },
   { id: 'camisa-negra', label: 'Camisa Negra', thumbnail: MOCKUP_TEMPLATES['camisa-negra'].baseImage },
   { id: 'camisa-blanca', label: 'Camisa Blanca', thumbnail: MOCKUP_TEMPLATES['camisa-blanca'].baseImage },
+  { id: 'gorra', label: 'Gorra', thumbnail: MOCKUP_TEMPLATES.gorra.baseImage },
+  { id: 'taza', label: 'Taza', thumbnail: MOCKUP_TEMPLATES.taza.baseImage },
+  { id: 'termo', label: 'Termo', thumbnail: MOCKUP_TEMPLATES.termo.baseImage },
 ];
 
-export default function ProductGallery({ designUrl, title }: ProductGalleryProps) {
+export default function ProductGallery({ product, title }: ProductGalleryProps) {
   const [selection, setSelection] = useState<GallerySelection>('preview');
 
   return (
     <div className="flex w-full flex-col gap-4">
       <div className="flex min-h-[280px] items-center justify-center overflow-hidden rounded-xl border border-slate-800 bg-slate-950 p-4 sm:min-h-[440px]">
         {selection === 'preview' ? (
-          <ProductPreview src={designUrl} alt={title} className="max-h-[560px] w-full object-contain" />
+          <ProductPreview src={product.imagen_preview_url} alt={title} className="max-h-[560px] w-full object-contain" />
         ) : (
-          <MockupViewer designUrl={designUrl} defaultProduct={selection} />
+          <MockupViewer product={product} defaultProduct={selection} />
         )}
       </div>
 
@@ -46,7 +50,7 @@ export default function ProductGallery({ designUrl, title }: ProductGalleryProps
           >
             <span className="flex aspect-square items-center justify-center overflow-hidden rounded bg-slate-900 px-1 text-center text-[10px] font-medium text-slate-300 sm:text-xs">
               {option.id === 'preview' ? (
-                <ProductPreview src={designUrl} alt="" className="h-full w-full object-contain" />
+                <ProductPreview src={product.imagen_preview_url} alt="" className="h-full w-full object-contain" />
               ) : (
                 <img src={option.thumbnail} alt="" className="h-full w-full object-contain" />
               )}

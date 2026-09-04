@@ -2,9 +2,10 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { MOCKUP_TEMPLATES } from '@/lib/mockup-config';
+import type { Producto } from '@/lib/types';
 
 interface MockupViewerProps {
-  designUrl: string;
+  product: Pick<Producto, 'imagen_preview_url' | 'diseno_mockup_url' | 'diseno_corte_url' | 'logo_url'>;
   defaultProduct?: string;
 }
 
@@ -18,7 +19,7 @@ function cargarImagen(src: string): Promise<HTMLImageElement> {
   });
 }
 
-export default function MockupViewer({ designUrl, defaultProduct = 'camisa-negra' }: MockupViewerProps) {
+export default function MockupViewer({ product, defaultProduct = 'camisa-negra' }: MockupViewerProps) {
   const initialProduct = MOCKUP_TEMPLATES[defaultProduct] ? defaultProduct : 'camisa-negra';
   const [selectedProduct, setSelectedProduct] = useState(initialProduct);
   const [loading, setLoading] = useState(true);
@@ -37,6 +38,7 @@ export default function MockupViewer({ designUrl, defaultProduct = 'camisa-negra
     }
 
     const template = MOCKUP_TEMPLATES[selectedProduct] ?? MOCKUP_TEMPLATES['camisa-negra'];
+    const designUrl = product.diseno_mockup_url || product.diseno_corte_url || product.logo_url || product.imagen_preview_url;
     setLoading(true);
     setError(null);
 
@@ -50,7 +52,16 @@ export default function MockupViewer({ designUrl, defaultProduct = 'camisa-negra
         context.drawImage(baseImage, 0, 0, canvas.width, canvas.height);
 
         const { x, y, width, height } = template.printArea;
-        context.drawImage(designImage, x, y, width, height);
+        const scale = Math.min(width / designImage.width, height / designImage.height);
+        const designWidth = designImage.width * scale;
+        const designHeight = designImage.height * scale;
+        context.drawImage(
+          designImage,
+          x + (width - designWidth) / 2,
+          y + (height - designHeight) / 2,
+          designWidth,
+          designHeight,
+        );
         setLoading(false);
       })
       .catch((reason: unknown) => {
@@ -62,7 +73,7 @@ export default function MockupViewer({ designUrl, defaultProduct = 'camisa-negra
     return () => {
       cancelled = true;
     };
-  }, [designUrl, selectedProduct]);
+  }, [product, selectedProduct]);
 
   return (
     <div className="flex w-full flex-col items-center gap-3">

@@ -19,6 +19,9 @@ export interface Producto {
   titulo: string;
   precio: number;
   imagen_preview_url: string;
+  diseno_mockup_url?: string | null;
+  diseno_corte_url?: string | null;
+  logo_url?: string | null;
   categoria?: string | null;
   archivo_r2_key?: string | null;
   descripcion?: string | null;

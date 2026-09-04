@@ -64,7 +64,7 @@ export default async function ProductoDetallePage({ params }: ProductoPageProps)
         ) : (
           <div className="grid min-w-0 grid-cols-1 gap-8 lg:grid-cols-2">
             <div className="flex min-h-[320px] items-center justify-center overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 p-6 lg:min-h-[520px]">
-              <ProductGallery designUrl={producto.imagen_preview_url} title={producto.titulo} />
+              <ProductGallery product={producto} title={producto.titulo} />
             </div>
 
             <div className="flex min-w-0 flex-col justify-center gap-6">
