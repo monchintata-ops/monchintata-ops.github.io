@@ -13,6 +13,7 @@ type Formulario = {
   precio: string;
   descripcion: string;
   imagen_preview_url: string;
+  diseno_mockup_url: string;
   archivo_r2_key: string;
 };
 
@@ -22,6 +23,7 @@ const VACIO: Formulario = {
   precio: '',
   descripcion: '',
   imagen_preview_url: '',
+  diseno_mockup_url: '',
   archivo_r2_key: '',
 };
 
@@ -33,6 +35,7 @@ function aFormulario(producto?: Producto | null): Formulario {
     precio: Number(producto.precio).toFixed(2),
     descripcion: String(producto.descripcion || ''),
     imagen_preview_url: String(producto.imagen_preview_url || ''),
+    diseno_mockup_url: String(producto.diseno_mockup_url || ''),
     archivo_r2_key: String(producto.archivo_r2_key || ''),
   };
 }
@@ -49,7 +52,7 @@ export default function AdminCatalogo({
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [form, setForm] = useState<Formulario>(VACIO);
   const [loading, setLoading] = useState(false);
-  const [subiendo, setSubiendo] = useState<'preview' | 'impresion' | null>(null);
+  const [subiendo, setSubiendo] = useState<'preview' | 'mockup' | 'impresion' | null>(null);
   const [mensaje, setMensaje] = useState<string | null>(errorInicial || null);
   const [error, setError] = useState<string | null>(null);
 
@@ -94,7 +97,7 @@ export default function AdminCatalogo({
     }
   }
 
-  async function subirArchivo(file: File, tipo: 'preview' | 'impresion') {
+  async function subirArchivo(file: File, tipo: 'preview' | 'mockup' | 'impresion') {
     setSubiendo(tipo);
     setError(null);
     try {
@@ -106,6 +109,7 @@ export default function AdminCatalogo({
         success?: boolean;
         archivo_r2_key?: string;
         imagen_preview_url?: string;
+        diseno_mockup_url?: string;
         error?: string;
       };
       if (!respuesta.ok || !data.success) {
@@ -119,6 +123,9 @@ export default function AdminCatalogo({
       }
       if (tipo === 'preview' && data.imagen_preview_url) {
         campo('imagen_preview_url', data.imagen_preview_url);
+      }
+      if (tipo === 'mockup' && data.diseno_mockup_url) {
+        campo('diseno_mockup_url', data.diseno_mockup_url);
       }
       setMensaje('Archivo subido a Storage. Recuerda guardar el producto.');
     } catch (err) {
@@ -178,6 +185,7 @@ export default function AdminCatalogo({
       precio: Number(form.precio),
       descripcion: form.descripcion,
       imagen_preview_url: form.imagen_preview_url,
+      diseno_mockup_url: form.diseno_mockup_url,
       archivo_r2_key: form.archivo_r2_key.trim(),
     };
 
@@ -416,6 +424,22 @@ export default function AdminCatalogo({
                 {subiendo === 'impresion'
                   ? 'Subiendo PNG a Storage…'
                   : form.archivo_r2_key || 'Se asignará archivo_r2_key al subir'}
+              </span>
+            </label>
+            <label className="block text-sm md:col-span-2">
+              <span className="text-slate-400">Diseño para Mockup (.png transparente / aislado)</span>
+              <input
+                type="file"
+                accept=".png,image/png"
+                disabled={loading || Boolean(subiendo)}
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (file) void subirArchivo(file, 'mockup');
+                }}
+                className="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-slate-300 file:mr-3 file:rounded-lg file:border-0 file:bg-amber-500 file:px-3 file:py-1 file:text-xs file:font-bold file:text-slate-950"
+              />
+              <span className="mt-1 block truncate text-[11px] text-slate-500">
+                {subiendo === 'mockup' ? 'Subiendo diseño para mockup…' : form.diseno_mockup_url || 'Sin archivo'}
               </span>
             </label>
             <div className="flex flex-wrap gap-2 md:col-span-2">

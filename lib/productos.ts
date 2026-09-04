@@ -5,7 +5,7 @@ import type { Producto } from '@/lib/types';
 import { esUuid } from '@/lib/uuid';
 
 const PRODUCTO_LIST_COLUMNS =
-  'id, titulo, descripcion, precio, imagen_preview_url, archivo_r2_key, categoria, creado_en';
+  'id, titulo, descripcion, precio, imagen_preview_url, diseno_mockup_url, archivo_r2_key, categoria, creado_en';
 
 function clienteCatalogo() {
   // En el servidor usamos service role para no chocar con RLS del catálogo público.

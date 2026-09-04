@@ -18,6 +18,11 @@ const TIPOS = {
     mime: ['image/png', 'image/svg+xml', 'image/webp'],
     exts: ['.png', '.svg', '.webp'],
   },
+  mockup: {
+    prefix: 'mockups',
+    mime: ['image/png'],
+    exts: ['.png'],
+  },
 } as const;
 
 function nombreSeguro(nombre: string) {
@@ -48,7 +53,7 @@ export async function POST(request: Request) {
     const form = await request.formData();
     const archivo = form.get('file');
     const tipoRaw = String(form.get('tipo') || 'impresion');
-    const tipo = tipoRaw === 'preview' ? 'preview' : 'impresion';
+    const tipo = tipoRaw === 'preview' || tipoRaw === 'mockup' ? tipoRaw : 'impresion';
 
     if (!(archivo instanceof File)) {
       return NextResponse.json({ success: false, error: 'Falta el archivo' }, { status: 400 });
@@ -89,12 +94,15 @@ export async function POST(request: Request) {
 
     const imagenPreviewUrl =
       tipo === 'preview' ? `/api/preview?key=${encodeURIComponent(key)}` : undefined;
+    const disenoMockupUrl =
+      tipo === 'mockup' ? `/api/preview?key=${encodeURIComponent(key)}` : undefined;
 
     return NextResponse.json({
       success: true,
       archivo_r2_key: tipo === 'impresion' ? key : undefined,
       key,
       imagen_preview_url: imagenPreviewUrl,
+      diseno_mockup_url: disenoMockupUrl,
     });
   } catch (error) {
     console.error('Error al subir a Storage:', error);

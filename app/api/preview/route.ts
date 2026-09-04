@@ -9,7 +9,7 @@ export async function GET(request: Request) {
   }
 
   const key = new URL(request.url).searchParams.get('key') || '';
-  if (!key.startsWith('previews/') || key.includes('..')) {
+  if ((!key.startsWith('previews/') && !key.startsWith('mockups/')) || key.includes('..')) {
     return NextResponse.json({ error: 'Clave de vista previa inválida' }, { status: 400 });
   }
 
