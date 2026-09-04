@@ -40,7 +40,7 @@ export const MOCKUP_TEMPLATES: Record<string, MockupTemplate> = {
   termo: {
     id: 'termo',
     label: 'Termo',
-    baseImage: '/mockups/termo-base.png',
+    baseImage: '/mockups/MockupThermoNegro.png',
     printArea: { x: 140, y: 110, width: 120, height: 220 },
   },
 };
