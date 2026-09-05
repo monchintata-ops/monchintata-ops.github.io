@@ -19,6 +19,29 @@ function cargarImagen(src: string): Promise<HTMLImageElement> {
   });
 }
 
+async function cargarDiseno(
+  primaryUrl: string | null | undefined,
+  originalKey: string | null | undefined,
+  previewUrl: string,
+) {
+  const fuentes = [
+    primaryUrl,
+    originalKey ? `/api/preview?key=${encodeURIComponent(originalKey)}` : null,
+    previewUrl,
+  ].filter((value, index, values): value is string => Boolean(value) && values.indexOf(value) === index);
+
+  let ultimoError: unknown = null;
+  for (const fuente of fuentes) {
+    try {
+      return await cargarImagen(fuente);
+    } catch (error) {
+      ultimoError = error;
+    }
+  }
+
+  throw ultimoError instanceof Error ? ultimoError : new Error('No se pudo cargar el diseño para el mockup.');
+}
+
 function dibujarDisenoCilindrico(
   context: CanvasRenderingContext2D,
   designImage: HTMLImageElement,
@@ -74,15 +97,17 @@ export default function MockupViewer({ product, defaultProduct = 'camisa-negra' 
 
     const template = MOCKUP_TEMPLATES[selectedProduct] ?? MOCKUP_TEMPLATES['camisa-negra'];
     const designKey = product.archivo_r2_key?.trim();
-    const designUrl =
-      product.diseno_mockup_url ||
-      product.diseno_corte_url ||
-      product.logo_url ||
-      (designKey ? `/api/preview?key=${encodeURIComponent(designKey)}` : product.imagen_preview_url);
     setLoading(true);
     setError(null);
 
-    Promise.all([cargarImagen(template.baseImage), cargarImagen(designUrl)])
+    Promise.all([
+      cargarImagen(template.baseImage),
+      cargarDiseno(
+        product.diseno_mockup_url || product.diseno_corte_url || product.logo_url,
+        designKey,
+        product.imagen_preview_url,
+      ),
+    ])
       .then(([baseImage, designImage]) => {
         if (cancelled) return;
 
