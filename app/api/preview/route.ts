@@ -70,6 +70,10 @@ export async function GET(request: Request) {
     } catch (error) {
       console.error(`Error procesando preview con Sharp (${key}):`, error);
       procesada = await crearImagenDeError();
+      return new NextResponse(new Uint8Array(procesada), {
+        status: 502,
+        headers: headersImagen(),
+      });
     }
 
     return new NextResponse(new Uint8Array(procesada), {
@@ -77,6 +81,9 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     console.error(`Error al leer preview de Storage (${key}):`, error);
-    return new NextResponse(new Uint8Array(await crearImagenDeError()), { headers: headersImagen() });
+    return new NextResponse(new Uint8Array(await crearImagenDeError()), {
+      status: 404,
+      headers: headersImagen(),
+    });
   }
 }
