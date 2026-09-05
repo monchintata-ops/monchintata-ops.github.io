@@ -45,7 +45,7 @@ export const MOCKUP_TEMPLATES: Record<string, MockupTemplate> = {
     id: 'termo',
     label: 'Termo',
     baseImage: '/mockups/MockupThermoNegro.png',
-    printArea: { x: 225, y: 645, width: 328, height: 338 },
+    printArea: { x: 190, y: 560, width: 390, height: 420 },
     isCylindrical: true,
     curvature: 0.08,
   },
