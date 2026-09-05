@@ -404,7 +404,7 @@ export default function AdminCatalogo({
               />
               <span className="mt-1 block truncate text-[11px] text-slate-500">
                 {subiendo === 'impresion'
-                  ? 'Procesando resolución, generando vista previa y aplicando marca de agua...'
+                  ? 'Procesando resolución, generando vista previa protegida y preparando mockup...'
                   : form.archivo_r2_key || 'Se asignará archivo_r2_key al subir'}
               </span>
             </label>

@@ -11,8 +11,8 @@ const MAX_BYTES = 25 * 1024 * 1024;
 const TIPOS = {
   impresion: {
     prefix: 'disenos',
-    mime: ['image/png', 'image/svg+xml', 'image/webp'],
-    exts: ['.png', '.svg', '.webp'],
+    mime: ['image/png', 'image/svg+xml'],
+    exts: ['.png', '.svg'],
   },
 } as const;
 
@@ -85,7 +85,7 @@ export async function POST(request: Request) {
       .toBuffer();
     const mockup = await imagen
       .clone()
-      .resize({ width: 1200, withoutEnlargement: true })
+      .resize({ width: 1000, withoutEnlargement: true })
       .webp({ quality: 82 })
       .toBuffer();
     await Promise.all([
