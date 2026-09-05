@@ -5,7 +5,7 @@ import { MOCKUP_TEMPLATES } from '@/lib/mockup-config';
 import type { Producto } from '@/lib/types';
 
 interface MockupViewerProps {
-  product: Pick<Producto, 'imagen_preview_url' | 'diseno_mockup_url' | 'diseno_corte_url' | 'logo_url'>;
+  product: Pick<Producto, 'imagen_preview_url' | 'diseno_mockup_url' | 'diseno_corte_url' | 'logo_url' | 'archivo_r2_key'>;
   defaultProduct?: string;
 }
 
@@ -73,7 +73,12 @@ export default function MockupViewer({ product, defaultProduct = 'camisa-negra' 
     }
 
     const template = MOCKUP_TEMPLATES[selectedProduct] ?? MOCKUP_TEMPLATES['camisa-negra'];
-    const designUrl = product.diseno_mockup_url || product.diseno_corte_url || product.logo_url || product.imagen_preview_url;
+    const designKey = product.archivo_r2_key?.trim();
+    const designUrl =
+      product.diseno_mockup_url ||
+      product.diseno_corte_url ||
+      product.logo_url ||
+      (designKey ? `/api/preview?key=${encodeURIComponent(designKey)}` : product.imagen_preview_url);
     setLoading(true);
     setError(null);
 

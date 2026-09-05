@@ -75,7 +75,7 @@ export async function GET(request: Request) {
       procesada = esPreview
         ? await imagen
             .flatten({ background: PREVIEW_BACKGROUND })
-            .composite([{ input: crearMarcaDeAgua(), tile: true, blend: 'over' }])
+            .composite([{ input: crearMarcaDeAgua(), tile: true, blend: 'over', density: 72 }])
             .webp({ quality: 80 })
             .toBuffer()
         : await imagen.webp({ quality: 82 }).toBuffer();
