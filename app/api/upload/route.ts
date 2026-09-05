@@ -16,15 +16,6 @@ const TIPOS = {
   },
 } as const;
 
-const WATERMARK_TEXT = process.env.WATERMARK_TEXT?.trim() || 'CreacionArte DTF';
-
-function watermarkSvg() {
-  const escaped = WATERMARK_TEXT.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  return Buffer.from(
-    `<svg width="1000" height="1000" xmlns="http://www.w3.org/2000/svg"><text x="500" y="500" text-anchor="middle" dominant-baseline="middle" transform="rotate(-28 500 500)" fill="white" fill-opacity="0.35" font-family="Arial, sans-serif" font-size="72" font-weight="700">${escaped}</text></svg>`
-  );
-}
-
 function nombreSeguro(nombre: string) {
   const base = nombre.split(/[/\\]/).pop() || 'archivo';
   return (
@@ -90,7 +81,6 @@ export async function POST(request: Request) {
     const preview = await imagen
       .clone()
       .resize({ width: 1000, withoutEnlargement: true })
-      .composite([{ input: watermarkSvg(), blend: 'over' }])
       .webp({ quality: 78 })
       .toBuffer();
     const mockup = await imagen
