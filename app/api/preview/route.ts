@@ -17,7 +17,7 @@ function headersImagen() {
 function crearMarcaDeAgua() {
   const texto = WATERMARK_TEXT.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   return Buffer.from(
-  `<svg width="360" height="180" xmlns="http://www.w3.org/2000/svg"><g transform="rotate(-28 180 90)"><text x="180" y="82" text-anchor="middle" fill="white" fill-opacity="0.55" font-family="Arial, sans-serif" font-size="24" font-weight="700">${texto}</text><text x="180" y="112" text-anchor="middle" fill="white" fill-opacity="0.55" font-family="Arial, sans-serif" font-size="13">PREVIEW PROTEGIDA</text></g></svg>`,
+  `<svg width="360" height="180" xmlns="http://www.w3.org/2000/svg"><g transform="rotate(-28 180 90)"><text x="180" y="82" text-anchor="middle" fill="white" fill-opacity="0.5" font-family="Arial, sans-serif" font-size="24" font-weight="700">${texto}</text><text x="180" y="112" text-anchor="middle" fill="white" fill-opacity="0.5" font-family="Arial, sans-serif" font-size="13">PREVIEW PROTEGIDA</text></g></svg>`,
   );
 }
 
@@ -29,13 +29,16 @@ async function crearImagenDeError() {
 }
 
 export async function GET(request: Request) {
-  if (!storagePrivadoConfigurado()) {
-    return NextResponse.json({ error: 'Supabase no está configurado' }, { status: 503 });
-  }
-
   const key = new URL(request.url).searchParams.get('key') || '';
   if ((!key.startsWith('previews/') && !key.startsWith('mockups/')) || key.includes('..')) {
     return NextResponse.json({ error: 'Clave de vista previa inválida' }, { status: 400 });
+  }
+
+  if (!storagePrivadoConfigurado()) {
+    return new NextResponse(new Uint8Array(await crearImagenDeError()), {
+      status: 503,
+      headers: headersImagen(),
+    });
   }
 
   try {
@@ -44,7 +47,12 @@ export async function GET(request: Request) {
     let procesada: Buffer;
 
     try {
-      const imagen = sharp(Buffer.from(objeto.bytes), { density: 300 }).resize({
+      if (!(objeto.bytes instanceof Uint8Array) || objeto.bytes.byteLength === 0) {
+        throw new Error('Storage devolvió un buffer de imagen vacío');
+      }
+
+      const buffer = Buffer.from(objeto.bytes.buffer, objeto.bytes.byteOffset, objeto.bytes.byteLength);
+      const imagen = sharp(buffer, { density: 300 }).resize({
         width: 450,
         height: 450,
         fit: 'inside',

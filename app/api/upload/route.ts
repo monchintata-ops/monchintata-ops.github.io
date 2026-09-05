@@ -57,7 +57,7 @@ async function prepararMarcaDeAgua(buffer: Buffer) {
     .toBuffer({ resolveWithObject: true });
 
   for (let indice = 3; indice < resultado.data.length; indice += 4) {
-    resultado.data[indice] = Math.round(resultado.data[indice] * 0.55);
+    resultado.data[indice] = Math.round(resultado.data[indice] * 0.5);
   }
 
   return sharp(resultado.data, { raw: resultado.info }).png().toBuffer();
