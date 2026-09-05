@@ -9,6 +9,9 @@ import {
 } from '@/lib/storagePrivado';
 import { esUuid } from '@/lib/uuid';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => ({}));

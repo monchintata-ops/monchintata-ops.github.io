@@ -4,6 +4,9 @@ import { getProductoById } from '@/lib/productos';
 import { urlAbsoluta } from '@/lib/siteUrl';
 import { esUuid } from '@/lib/uuid';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function POST(request: Request) {
   if (!paypalConfigurado()) {
     return NextResponse.json(

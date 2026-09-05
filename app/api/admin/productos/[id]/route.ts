@@ -7,6 +7,9 @@ import {
   type ProductoInput,
 } from '@/lib/adminProductos';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 interface RouteContext {
   params: { id: string };
 }

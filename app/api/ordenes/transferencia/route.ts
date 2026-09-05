@@ -16,6 +16,8 @@ import { EMAIL_RE } from '@/lib/types';
 import { esUuid } from '@/lib/uuid';
 
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 const MAX_BYTES = 8 * 1024 * 1024;
 const EXTS = ['.png', '.jpg', '.jpeg', '.webp', '.pdf'];

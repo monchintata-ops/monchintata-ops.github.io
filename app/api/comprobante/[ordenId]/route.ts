@@ -5,6 +5,7 @@ import { esUuid } from '@/lib/uuid';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 interface RouteContext {
   params: { ordenId: string };

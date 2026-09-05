@@ -1,6 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 import { fetchSinCache } from '@/lib/supabaseFetch';
 
+type SupabaseClient = ReturnType<typeof createClient>;
+
 function getSupabaseUrl() {
   return process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() || '';
 }
@@ -24,6 +26,13 @@ export function isSupabaseConfigured() {
   return true;
 }
 
-export const supabase = createClient(getSupabaseUrl(), getSupabaseKey(), {
-  global: { fetch: fetchSinCache },
-});
+let cliente: SupabaseClient | null = null;
+
+export function getSupabase(): SupabaseClient {
+  if (!cliente) {
+    cliente = createClient(getSupabaseUrl(), getSupabaseKey(), {
+      global: { fetch: fetchSinCache },
+    });
+  }
+  return cliente;
+}

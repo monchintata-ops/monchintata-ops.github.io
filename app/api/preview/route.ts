@@ -3,6 +3,8 @@ import sharp from 'sharp';
 import { descargarArchivoPrivado, storagePrivadoConfigurado } from '@/lib/storagePrivado';
 
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 const WATERMARK_TEXT = process.env.WATERMARK_TEXT?.trim() || 'CREACIONARTE DTF';
 const PREVIEW_BACKGROUND = '#1E293B';

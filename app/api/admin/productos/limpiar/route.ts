@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 import { adminAutenticado } from '@/lib/adminAuth';
 import { limpiarDuplicados } from '@/lib/adminProductos';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 function noAutorizado() {
   return NextResponse.json({ success: false, error: 'Acceso no autorizado' }, { status: 401 });
 }

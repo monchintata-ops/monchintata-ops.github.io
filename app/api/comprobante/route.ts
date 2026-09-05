@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { esUuid } from '@/lib/uuid';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 /** Compatibilidad: /api/comprobante?ordenId= → /api/comprobante/[ordenId] */
 export async function GET(request: Request) {

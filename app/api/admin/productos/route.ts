@@ -3,6 +3,9 @@ import { adminAutenticado } from '@/lib/adminAuth';
 import { crearProducto, validarProductoInput, type ProductoInput } from '@/lib/adminProductos';
 import { getProductos } from '@/lib/productos';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 function noAutorizado() {
   return NextResponse.json({ success: false, error: 'Acceso no autorizado' }, { status: 401 });
 }

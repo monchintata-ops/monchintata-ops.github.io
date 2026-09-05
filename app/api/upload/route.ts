@@ -5,6 +5,8 @@ import { esArchivoR2KeyValida } from '@/lib/r2Key';
 import { storagePrivadoConfigurado, subirArchivoPrivado } from '@/lib/storagePrivado';
 
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 const MAX_BYTES = 25 * 1024 * 1024;
 const PREVIEW_BACKGROUND = '#1E293B';

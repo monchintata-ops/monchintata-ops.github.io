@@ -10,6 +10,9 @@ import { createSignedDownloadUrl, STORAGE_SIGNED_URL_TTL_SECONDS } from '@/lib/s
 import { EMAIL_RE } from '@/lib/types';
 import { esUuid } from '@/lib/uuid';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function POST(request: Request) {
   if (!paypalConfigurado()) {
     return NextResponse.json(

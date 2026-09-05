@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getProductos } from '@/lib/productos';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 /** Catálogo público para el checkout (sin keys de impresión). */
 export async function GET() {

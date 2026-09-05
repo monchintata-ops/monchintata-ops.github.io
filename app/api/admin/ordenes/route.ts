@@ -4,6 +4,9 @@ import { listarOrdenes } from '@/lib/ordenes';
 import { getProductos } from '@/lib/productos';
 import { resendConfigurado } from '@/lib/notificaciones';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 function noAutorizado() {
   return NextResponse.json({ success: false, error: 'Acceso no autorizado' }, { status: 401 });
 }

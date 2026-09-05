@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 import { adminAutenticado } from '@/lib/adminAuth';
 import { createSignedDownloadUrl } from '@/lib/storagePrivado';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET(request: Request) {
   if (!adminAutenticado()) {
     return NextResponse.json({ success: false, error: 'Acceso no autorizado' }, { status: 401 });

@@ -9,6 +9,9 @@ import { urlAbsoluta } from '@/lib/siteUrl';
 import { createSignedDownloadUrl, STORAGE_SIGNED_URL_TTL_SECONDS } from '@/lib/storagePrivado';
 import { esUuid } from '@/lib/uuid';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 interface RouteContext {
   params: { id: string };
 }

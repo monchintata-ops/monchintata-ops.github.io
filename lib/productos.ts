@@ -1,4 +1,4 @@
-import { isSupabaseConfigured, supabase } from '@/lib/supabase';
+import { getSupabase, isSupabaseConfigured } from '@/lib/supabase';
 import { getSupabaseAdmin, isSupabaseAdminConfigured } from '@/lib/supabaseAdmin';
 import { ensureProductoPrueba } from '@/lib/seedCatalogo';
 import type { Producto } from '@/lib/types';
@@ -11,7 +11,7 @@ const PRODUCTO_LIST_COLUMNS_LEGACY =
 
 function clienteCatalogo() {
   // En el servidor usamos service role para no chocar con RLS del catálogo público.
-  return isSupabaseAdminConfigured() ? getSupabaseAdmin() : supabase;
+  return isSupabaseAdminConfigured() ? getSupabaseAdmin() : getSupabase();
 }
 
 export async function getProductos(): Promise<{ productos: Producto[]; error: string | null }> {
