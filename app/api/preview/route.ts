@@ -9,9 +9,9 @@ export const revalidate = 0;
 const WATERMARK_TEXT = process.env.WATERMARK_TEXT?.trim() || 'CREACIONARTE DTF';
 const PREVIEW_BACKGROUND = '#1E293B';
 
-function headersImagen(contentType = 'image/webp') {
+function headersImagen() {
   return {
-    'Content-Type': contentType,
+    'Content-Type': 'image/webp',
     'Cache-Control': 'no-store, must-revalidate',
   };
 }
@@ -19,7 +19,7 @@ function headersImagen(contentType = 'image/webp') {
 function crearMarcaDeAgua() {
   const texto = WATERMARK_TEXT.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   return Buffer.from(
-    `<svg width="450" height="450" xmlns="http://www.w3.org/2000/svg"><g transform="rotate(-28 225 225)" fill="white" fill-opacity="0.5" font-family="Arial, sans-serif" font-weight="700" text-anchor="middle"><text x="225" y="105" font-size="24">${texto}</text><text x="225" y="145" font-size="13">PREVIEW PROTEGIDA</text><text x="225" y="255" font-size="24">${texto}</text><text x="225" y="295" font-size="13">PREVIEW PROTEGIDA</text><text x="225" y="405" font-size="24">${texto}</text></g></svg>`,
+  `<svg width="360" height="180" xmlns="http://www.w3.org/2000/svg"><g transform="rotate(-28 180 90)"><text x="180" y="82" text-anchor="middle" fill="white" fill-opacity="0.5" font-family="Arial, sans-serif" font-size="24" font-weight="700">${texto}</text><text x="180" y="112" text-anchor="middle" fill="white" fill-opacity="0.5" font-family="Arial, sans-serif" font-size="13">PREVIEW PROTEGIDA</text></g></svg>`,
   );
 }
 
@@ -32,10 +32,7 @@ async function crearImagenDeError() {
 
 export async function GET(request: Request) {
   const key = new URL(request.url).searchParams.get('key') || '';
-  if (
-    (!key.startsWith('previews/') && !key.startsWith('mockups/') && !key.startsWith('disenos/')) ||
-    key.includes('..')
-  ) {
+  if ((!key.startsWith('previews/') && !key.startsWith('mockups/')) || key.includes('..')) {
     return NextResponse.json({ error: 'Clave de vista previa inválida' }, { status: 400 });
   }
 
@@ -48,24 +45,15 @@ export async function GET(request: Request) {
 
   try {
     const objeto = await descargarArchivoPrivado(key);
-
-    if (key.startsWith('disenos/')) {
-      return new NextResponse(new Uint8Array(objeto.bytes), {
-        headers: headersImagen(objeto.contentType),
-      });
-    }
-
     const esPreview = key.startsWith('previews/');
     let procesada: Buffer;
-    let bufferOriginal: Buffer | null = null;
 
     try {
       if (!(objeto.bytes instanceof Uint8Array) || objeto.bytes.byteLength === 0) {
         throw new Error('Storage devolvió un buffer de imagen vacío');
       }
 
-      bufferOriginal = Buffer.from(objeto.bytes.buffer, objeto.bytes.byteOffset, objeto.bytes.byteLength);
-      const buffer = bufferOriginal;
+      const buffer = Buffer.from(objeto.bytes.buffer, objeto.bytes.byteOffset, objeto.bytes.byteLength);
       const imagen = sharp(buffer, { density: 300 }).resize({
         width: 450,
         height: 450,
@@ -75,21 +63,13 @@ export async function GET(request: Request) {
       procesada = esPreview
         ? await imagen
             .flatten({ background: PREVIEW_BACKGROUND })
-            .composite([{ input: crearMarcaDeAgua(), blend: 'over' }])
+            .composite([{ input: crearMarcaDeAgua(), tile: true, blend: 'over' }])
             .webp({ quality: 80 })
             .toBuffer()
         : await imagen.webp({ quality: 82 }).toBuffer();
     } catch (error) {
       console.error(`Error procesando preview con Sharp (${key}):`, error);
-      if (!bufferOriginal || !esPreview) {
-        procesada = await crearImagenDeError();
-        return new NextResponse(new Uint8Array(procesada), {
-          status: 502,
-          headers: headersImagen(),
-        });
-      }
-
-      throw error;
+      procesada = await crearImagenDeError();
     }
 
     return new NextResponse(new Uint8Array(procesada), {
@@ -97,9 +77,6 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     console.error(`Error al leer preview de Storage (${key}):`, error);
-    return new NextResponse(new Uint8Array(await crearImagenDeError()), {
-      status: 404,
-      headers: headersImagen(),
-    });
+    return new NextResponse(new Uint8Array(await crearImagenDeError()), { headers: headersImagen() });
   }
 }
