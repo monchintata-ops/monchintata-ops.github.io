@@ -9,7 +9,7 @@ const WATERMARK_TEXT = process.env.WATERMARK_TEXT?.trim() || 'CREACIONARTE DTF';
 function crearMarcaDeAgua() {
   const texto = WATERMARK_TEXT.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   return Buffer.from(
-    `<svg width="360" height="180" xmlns="http://www.w3.org/2000/svg"><g transform="rotate(-28 180 90)"><text x="180" y="82" text-anchor="middle" fill="white" fill-opacity="0.3" font-family="Arial, sans-serif" font-size="24" font-weight="700">${texto}</text><text x="180" y="112" text-anchor="middle" fill="white" fill-opacity="0.3" font-family="Arial, sans-serif" font-size="13">PREVIEW PROTEGIDA</text></g></svg>`,
+  `<svg width="360" height="180" xmlns="http://www.w3.org/2000/svg"><g transform="rotate(-28 180 90)"><text x="180" y="82" text-anchor="middle" fill="white" fill-opacity="0.55" font-family="Arial, sans-serif" font-size="24" font-weight="700">${texto}</text><text x="180" y="112" text-anchor="middle" fill="white" fill-opacity="0.55" font-family="Arial, sans-serif" font-size="13">PREVIEW PROTEGIDA</text></g></svg>`,
   );
 }
 
@@ -32,9 +32,10 @@ export async function GET(request: Request) {
       fit: 'inside',
       withoutEnlargement: true,
     });
-    const procesada = esPreview
-      ? await imagen
-          .composite([{ input: crearMarcaDeAgua(), tile: true, blend: 'over' }])
+      const procesada = esPreview
+        ? await imagen
+            .flatten({ background: '#1E293B' })
+            .composite([{ input: crearMarcaDeAgua(), tile: true, blend: 'over' }])
           .webp({ quality: 80 })
           .toBuffer()
       : await imagen.webp({ quality: 82 }).toBuffer();

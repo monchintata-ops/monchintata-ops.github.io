@@ -6,6 +6,11 @@ import type { Producto } from '@/lib/types';
 import { esArchivoR2KeyValida } from '@/lib/r2Key';
 
 type Modo = 'crear' | 'editar' | null;
+type ArchivosPendientes = {
+  impresion: File | null;
+  marca: File | null;
+  mockup: File | null;
+};
 
 type Formulario = {
   titulo: string;
@@ -51,6 +56,11 @@ export default function AdminCatalogo({
   const [modo, setModo] = useState<Modo>(null);
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [form, setForm] = useState<Formulario>(VACIO);
+  const [archivosPendientes, setArchivosPendientes] = useState<ArchivosPendientes>({
+    impresion: null,
+    marca: null,
+    mockup: null,
+  });
   const [loading, setLoading] = useState(false);
   const [subiendo, setSubiendo] = useState<'impresion' | null>(null);
   const [mensaje, setMensaje] = useState<string | null>(errorInicial || null);
@@ -66,6 +76,7 @@ export default function AdminCatalogo({
     setModo('crear');
     setEditandoId(null);
     setForm(VACIO);
+    setArchivosPendientes({ impresion: null, marca: null, mockup: null });
     setError(null);
     setMensaje(null);
   }
@@ -74,6 +85,7 @@ export default function AdminCatalogo({
     setModo('editar');
     setEditandoId(producto.id);
     setForm(aFormulario(producto));
+    setArchivosPendientes({ impresion: null, marca: null, mockup: null });
     setError(null);
     setMensaje(null);
   }
@@ -82,6 +94,7 @@ export default function AdminCatalogo({
     setModo(null);
     setEditandoId(null);
     setForm(VACIO);
+    setArchivosPendientes({ impresion: null, marca: null, mockup: null });
     setError(null);
   }
 
@@ -97,13 +110,17 @@ export default function AdminCatalogo({
     }
   }
 
-  async function subirArchivo(file: File) {
+  async function subirArchivos(archivos: ArchivosPendientes) {
+    if (!archivos.impresion) {
+      throw new Error('Selecciona el archivo de impresión HD antes de procesar.');
+    }
     setSubiendo('impresion');
     setError(null);
     try {
       const cuerpo = new FormData();
-      cuerpo.append('file', file);
-      cuerpo.append('tipo', 'impresion');
+      cuerpo.append('file', archivos.impresion);
+      if (archivos.marca) cuerpo.append('watermark', archivos.marca);
+      if (archivos.mockup) cuerpo.append('mockup', archivos.mockup);
       const respuesta = await fetch('/api/upload', { method: 'POST', body: cuerpo });
       const data = (await respuesta.json()) as {
         success?: boolean;
@@ -126,6 +143,7 @@ export default function AdminCatalogo({
         campo('diseno_mockup_url', data.diseno_mockup_url);
       }
       setMensaje('Archivo procesado. La preview y el asset para mockup fueron generados automáticamente.');
+      return data;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al subir');
     } finally {
@@ -168,7 +186,7 @@ export default function AdminCatalogo({
       setError('Espera a que termine la subida a Storage.');
       return;
     }
-    if (!esArchivoR2KeyValida(form.archivo_r2_key)) {
+    if (!esArchivoR2KeyValida(form.archivo_r2_key) && !archivosPendientes.impresion) {
       setError('Sube el archivo de impresión (.png/.svg) y espera a que /api/upload asigne archivo_r2_key antes de guardar.');
       return;
     }
@@ -177,17 +195,18 @@ export default function AdminCatalogo({
     setError(null);
     setMensaje(null);
 
-    const body = {
-      titulo: form.titulo,
-      categoria: form.categoria,
-      precio: Number(form.precio),
-      descripcion: form.descripcion,
-      imagen_preview_url: form.imagen_preview_url,
-      diseno_mockup_url: form.diseno_mockup_url,
-      archivo_r2_key: form.archivo_r2_key.trim(),
-    };
-
     try {
+      const subida = archivosPendientes.impresion ? await subirArchivos(archivosPendientes) : null;
+
+      const body = {
+        titulo: form.titulo,
+        categoria: form.categoria,
+        precio: Number(form.precio),
+        descripcion: form.descripcion,
+        imagen_preview_url: subida?.imagen_preview_url || form.imagen_preview_url,
+        diseno_mockup_url: subida?.diseno_mockup_url || form.diseno_mockup_url,
+        archivo_r2_key: (subida?.archivo_r2_key || form.archivo_r2_key).trim(),
+      };
       const respuesta =
         modo === 'editar' && editandoId
           ? await fetch(`/api/admin/productos/${editandoId}`, {
@@ -398,24 +417,56 @@ export default function AdminCatalogo({
                 disabled={loading || Boolean(subiendo)}
                 onChange={(event) => {
                   const file = event.target.files?.[0];
-                  if (file) void subirArchivo(file);
+                  setArchivosPendientes((prev) => ({ ...prev, impresion: file || null }));
                 }}
                 className="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-slate-300 file:mr-3 file:rounded-lg file:border-0 file:bg-amber-500 file:px-3 file:py-1 file:text-xs file:font-bold file:text-slate-950"
               />
               <span className="mt-1 block truncate text-[11px] text-slate-500">
                 {subiendo === 'impresion'
                   ? 'Procesando resolución, generando vista previa protegida y preparando mockup...'
-                  : form.archivo_r2_key || 'Se asignará archivo_r2_key al subir'}
+                  : archivosPendientes.impresion?.name || form.archivo_r2_key || 'Se procesará al guardar'}
+              </span>
+            </label>
+            <label className="block text-sm">
+              <span className="text-slate-400">Marca de agua original (opcional)</span>
+              <input
+                type="file"
+                accept=".png,.svg,.webp,image/png,image/svg+xml,image/webp"
+                disabled={loading || Boolean(subiendo)}
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  setArchivosPendientes((prev) => ({ ...prev, marca: file || null }));
+                }}
+                className="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-slate-300 file:mr-3 file:rounded-lg file:border-0 file:bg-amber-500 file:px-3 file:py-1 file:text-xs file:font-bold file:text-slate-950"
+              />
+              <span className="mt-1 block truncate text-[11px] text-slate-500">
+                {archivosPendientes.marca?.name || 'Se conserva la calidad original'}
+              </span>
+            </label>
+            <label className="block text-sm">
+              <span className="text-slate-400">Imagen para mockup (opcional)</span>
+              <input
+                type="file"
+                accept=".png,.svg,.webp,image/png,image/svg+xml,image/webp"
+                disabled={loading || Boolean(subiendo)}
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  setArchivosPendientes((prev) => ({ ...prev, mockup: file || null }));
+                }}
+                className="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-slate-300 file:mr-3 file:rounded-lg file:border-0 file:bg-amber-500 file:px-3 file:py-1 file:text-xs file:font-bold file:text-slate-950"
+              />
+              <span className="mt-1 block truncate text-[11px] text-slate-500">
+                {archivosPendientes.mockup?.name || 'Se optimizará automáticamente para Canvas'}
               </span>
             </label>
             <div className="flex flex-wrap gap-2 md:col-span-2">
               <button
                 type="submit"
-                disabled={loading || Boolean(subiendo) || !esArchivoR2KeyValida(form.archivo_r2_key)}
+                disabled={loading || Boolean(subiendo) || (!esArchivoR2KeyValida(form.archivo_r2_key) && !archivosPendientes.impresion)}
                 className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2 text-sm font-bold text-slate-950 hover:bg-amber-400 disabled:opacity-70"
               >
                 {loading || subiendo ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                {subiendo ? 'Subiendo archivo a Storage...' : 'Guardar cambios'}
+                {subiendo ? 'Procesando imágenes...' : 'Guardar cambios'}
               </button>
               <button
                 type="button"

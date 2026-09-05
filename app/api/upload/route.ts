@@ -7,12 +7,23 @@ import { storagePrivadoConfigurado, subirArchivoPrivado } from '@/lib/storagePri
 export const runtime = 'nodejs';
 
 const MAX_BYTES = 25 * 1024 * 1024;
+const PREVIEW_BACKGROUND = '#1E293B';
 
 const TIPOS = {
   impresion: {
     prefix: 'disenos',
     mime: ['image/png', 'image/svg+xml'],
     exts: ['.png', '.svg'],
+  },
+  marca: {
+    prefix: 'marcas',
+    mime: ['image/png', 'image/svg+xml', 'image/webp'],
+    exts: ['.png', '.svg', '.webp'],
+  },
+  mockup: {
+    prefix: 'mockups-originales',
+    mime: ['image/png', 'image/svg+xml', 'image/webp'],
+    exts: ['.png', '.svg', '.webp'],
   },
 } as const;
 
@@ -26,6 +37,30 @@ function nombreSeguro(nombre: string) {
       .replace(/^-|-$/g, '')
       .slice(0, 80) || 'archivo'
   );
+}
+
+function extensionDe(nombre: string) {
+  return nombre.includes('.') ? `.${nombre.split('.').pop()}` : '';
+}
+
+function formatoPermitido(archivo: File, regla: (typeof TIPOS)[keyof typeof TIPOS]) {
+  const nombre = nombreSeguro(archivo.name);
+  return (regla.exts as readonly string[]).includes(extensionDe(nombre)) ||
+    (regla.mime as readonly string[]).includes(archivo.type);
+}
+
+async function prepararMarcaDeAgua(buffer: Buffer) {
+  const resultado = await sharp(buffer)
+    .resize({ width: 360, withoutEnlargement: true })
+    .ensureAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+
+  for (let indice = 3; indice < resultado.data.length; indice += 4) {
+    resultado.data[indice] = Math.round(resultado.data[indice] * 0.55);
+  }
+
+  return sharp(resultado.data, { raw: resultado.info }).png().toBuffer();
 }
 
 export async function POST(request: Request) {
@@ -43,7 +78,8 @@ export async function POST(request: Request) {
   try {
     const form = await request.formData();
     const archivo = form.get('file');
-    const tipo = 'impresion';
+    const marca = form.get('watermark');
+    const mockupArchivo = form.get('mockup');
 
     if (!(archivo instanceof File)) {
       return NextResponse.json({ success: false, error: 'Falta el archivo' }, { status: 400 });
@@ -58,16 +94,29 @@ export async function POST(request: Request) {
 
     const regla = TIPOS.impresion;
     const nombre = nombreSeguro(archivo.name);
-    const ext = nombre.includes('.') ? `.${nombre.split('.').pop()}` : '';
 
-    if (!(regla.exts as readonly string[]).includes(ext) && !(regla.mime as readonly string[]).includes(archivo.type)) {
+    if (!formatoPermitido(archivo, regla)) {
       return NextResponse.json(
-        { success: false, error: `Formato no permitido para ${tipo}` },
+        { success: false, error: 'Formato no permitido para impresión HD' },
         { status: 400 }
       );
     }
 
-    const key = `${regla.prefix}/${Date.now()}-${nombre}`;
+    for (const [nombreCampo, archivoOpcional, reglaOpcional] of [
+      ['watermark', marca, TIPOS.marca],
+      ['mockup', mockupArchivo, TIPOS.mockup],
+    ] as const) {
+      if (archivoOpcional instanceof File &&
+        (archivoOpcional.size > MAX_BYTES || !formatoPermitido(archivoOpcional, reglaOpcional))) {
+        return NextResponse.json(
+          { success: false, error: `Formato o tamaño no permitido para ${nombreCampo}` },
+          { status: 400 }
+        );
+      }
+    }
+
+    const timestamp = Date.now();
+    const key = `${regla.prefix}/${timestamp}-${nombre}`;
     const buffer = Buffer.from(await archivo.arrayBuffer());
     await subirArchivoPrivado({
       path: key,
@@ -75,16 +124,30 @@ export async function POST(request: Request) {
       contentType: archivo.type || 'application/octet-stream',
     });
 
-    const imagen = sharp(buffer, { density: 300 });
-    const previewKey = `previews/${Date.now()}-${nombre.replace(/\.[^.]+$/, '')}.webp`;
-    const mockupKey = `mockups/${Date.now()}-${nombre.replace(/\.[^.]+$/, '')}.webp`;
-    const preview = await imagen
-      .clone()
+    const watermarkBuffer = marca instanceof File ? Buffer.from(await marca.arrayBuffer()) : null;
+    const mockupBuffer = mockupArchivo instanceof File ? Buffer.from(await mockupArchivo.arrayBuffer()) : buffer;
+    const marcaKey = watermarkBuffer
+      ? `${TIPOS.marca.prefix}/${timestamp}-${nombreSeguro((marca as File).name)}`
+      : null;
+    if (watermarkBuffer && marca instanceof File) {
+      await subirArchivoPrivado({
+        path: marcaKey!,
+        body: watermarkBuffer,
+        contentType: marca.type || 'application/octet-stream',
+      });
+    }
+
+    const baseNombre = nombre.replace(/\.[^.]+$/, '');
+    const previewKey = `previews/${timestamp}-${baseNombre}.webp`;
+    const mockupKey = `mockups/${timestamp}-${baseNombre}.webp`;
+    const marcaProcesada = watermarkBuffer ? await prepararMarcaDeAgua(watermarkBuffer) : null;
+    const preview = await sharp(buffer, { density: 300 })
       .resize({ width: 1000, withoutEnlargement: true })
+      .flatten({ background: PREVIEW_BACKGROUND })
+      .composite(marcaProcesada ? [{ input: marcaProcesada, tile: true, blend: 'over' }] : [])
       .webp({ quality: 78 })
       .toBuffer();
-    const mockup = await imagen
-      .clone()
+    const mockup = await sharp(mockupBuffer, { density: 300 })
       .resize({ width: 1000, withoutEnlargement: true })
       .webp({ quality: 82 })
       .toBuffer();
@@ -93,7 +156,7 @@ export async function POST(request: Request) {
       subirArchivoPrivado({ path: mockupKey, body: mockup, contentType: 'image/webp' }),
     ]);
 
-    if (tipo === 'impresion' && !esArchivoR2KeyValida(key)) {
+    if (!esArchivoR2KeyValida(key)) {
       return NextResponse.json(
         { success: false, error: 'No se pudo generar un archivo_r2_key válido' },
         { status: 500 }
@@ -107,6 +170,7 @@ export async function POST(request: Request) {
       success: true,
       archivo_r2_key: key,
       key,
+      watermark_key: marcaKey,
       imagen_preview_url: imagenPreviewUrl,
       diseno_mockup_url: disenoMockupUrl,
     });
