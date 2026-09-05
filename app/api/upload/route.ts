@@ -142,7 +142,7 @@ export async function POST(request: Request) {
     const mockupKey = `mockups/${timestamp}-${baseNombre}.webp`;
     const marcaProcesada = watermarkBuffer ? await prepararMarcaDeAgua(watermarkBuffer) : null;
     const preview = await sharp(buffer, { density: 300 })
-      .resize({ width: 1000, withoutEnlargement: true })
+      .resize({ width: 450, fit: 'inside', withoutEnlargement: true })
       .flatten({ background: PREVIEW_BACKGROUND })
       .composite(marcaProcesada ? [{ input: marcaProcesada, tile: true, blend: 'over' }] : [])
       .webp({ quality: 78 })

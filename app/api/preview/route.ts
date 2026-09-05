@@ -27,8 +27,8 @@ export async function GET(request: Request) {
     const objeto = await descargarArchivoPrivado(key);
     const esPreview = key.startsWith('previews/');
     const imagen = sharp(Buffer.from(objeto.bytes), { density: 300 }).resize({
-      width: 1000,
-      height: 1000,
+      width: 450,
+      height: 450,
       fit: 'inside',
       withoutEnlargement: true,
     });
