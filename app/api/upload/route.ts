@@ -53,7 +53,7 @@ function formatoPermitido(archivo: File, regla: (typeof TIPOS)[keyof typeof TIPO
 
 async function prepararMarcaDeAgua(buffer: Buffer) {
   const resultado = await sharp(buffer)
-    .resize({ width: 360, withoutEnlargement: true })
+    .resize({ width: 360, height: 180, fit: 'inside', withoutEnlargement: true })
     .ensureAlpha()
     .raw()
     .toBuffer({ resolveWithObject: true });
@@ -143,12 +143,15 @@ export async function POST(request: Request) {
     const previewKey = `previews/${timestamp}-${baseNombre}.webp`;
     const mockupKey = `mockups/${timestamp}-${baseNombre}.webp`;
     const marcaProcesada = watermarkBuffer ? await prepararMarcaDeAgua(watermarkBuffer) : null;
-    const preview = await sharp(buffer, { density: 300 })
+    const previewPipeline = sharp(buffer, { density: 300 })
       .resize({ width: 450, fit: 'inside', withoutEnlargement: true })
-      .flatten({ background: PREVIEW_BACKGROUND })
-      .composite(marcaProcesada ? [{ input: marcaProcesada, tile: true, blend: 'over' }] : [])
-      .webp({ quality: 78 })
-      .toBuffer();
+      .flatten({ background: PREVIEW_BACKGROUND });
+    const preview = await (marcaProcesada
+      ? previewPipeline
+          .composite([{ input: marcaProcesada, tile: true, blend: 'over' }])
+          .webp({ quality: 78 })
+          .toBuffer()
+      : previewPipeline.webp({ quality: 78 }).toBuffer());
     const mockup = await sharp(mockupBuffer, { density: 300 })
       .resize({ width: 1000, withoutEnlargement: true })
       .webp({ quality: 82 })
