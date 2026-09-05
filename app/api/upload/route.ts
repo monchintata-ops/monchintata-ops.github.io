@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import sharp from 'sharp';
 import { adminAutenticado } from '@/lib/adminAuth';
 import { esArchivoR2KeyValida } from '@/lib/r2Key';
 import { storagePrivadoConfigurado, subirArchivoPrivado } from '@/lib/storagePrivado';
@@ -8,22 +9,21 @@ export const runtime = 'nodejs';
 const MAX_BYTES = 25 * 1024 * 1024;
 
 const TIPOS = {
-  preview: {
-    prefix: 'previews',
-    mime: ['image/webp', 'image/png', 'image/jpeg', 'image/svg+xml'],
-    exts: ['.webp', '.png', '.jpg', '.jpeg', '.svg'],
-  },
   impresion: {
     prefix: 'disenos',
     mime: ['image/png', 'image/svg+xml', 'image/webp'],
     exts: ['.png', '.svg', '.webp'],
   },
-  mockup: {
-    prefix: 'mockups',
-    mime: ['image/png'],
-    exts: ['.png'],
-  },
 } as const;
+
+const WATERMARK_TEXT = process.env.WATERMARK_TEXT?.trim() || 'CreacionArte DTF';
+
+function watermarkSvg() {
+  const escaped = WATERMARK_TEXT.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return Buffer.from(
+    `<svg width="1000" height="1000" xmlns="http://www.w3.org/2000/svg"><text x="500" y="500" text-anchor="middle" dominant-baseline="middle" transform="rotate(-28 500 500)" fill="white" fill-opacity="0.35" font-family="Arial, sans-serif" font-size="72" font-weight="700">${escaped}</text></svg>`
+  );
+}
 
 function nombreSeguro(nombre: string) {
   const base = nombre.split(/[/\\]/).pop() || 'archivo';
@@ -52,8 +52,7 @@ export async function POST(request: Request) {
   try {
     const form = await request.formData();
     const archivo = form.get('file');
-    const tipoRaw = String(form.get('tipo') || 'impresion');
-    const tipo = tipoRaw === 'preview' || tipoRaw === 'mockup' ? tipoRaw : 'impresion';
+    const tipo = 'impresion';
 
     if (!(archivo instanceof File)) {
       return NextResponse.json({ success: false, error: 'Falta el archivo' }, { status: 400 });
@@ -66,7 +65,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const regla = TIPOS[tipo];
+    const regla = TIPOS.impresion;
     const nombre = nombreSeguro(archivo.name);
     const ext = nombre.includes('.') ? `.${nombre.split('.').pop()}` : '';
 
@@ -85,6 +84,25 @@ export async function POST(request: Request) {
       contentType: archivo.type || 'application/octet-stream',
     });
 
+    const imagen = sharp(buffer, { density: 300 });
+    const previewKey = `previews/${Date.now()}-${nombre.replace(/\.[^.]+$/, '')}.webp`;
+    const mockupKey = `mockups/${Date.now()}-${nombre.replace(/\.[^.]+$/, '')}.webp`;
+    const preview = await imagen
+      .clone()
+      .resize({ width: 1000, withoutEnlargement: true })
+      .composite([{ input: watermarkSvg(), blend: 'over' }])
+      .webp({ quality: 78 })
+      .toBuffer();
+    const mockup = await imagen
+      .clone()
+      .resize({ width: 1200, withoutEnlargement: true })
+      .webp({ quality: 82 })
+      .toBuffer();
+    await Promise.all([
+      subirArchivoPrivado({ path: previewKey, body: preview, contentType: 'image/webp' }),
+      subirArchivoPrivado({ path: mockupKey, body: mockup, contentType: 'image/webp' }),
+    ]);
+
     if (tipo === 'impresion' && !esArchivoR2KeyValida(key)) {
       return NextResponse.json(
         { success: false, error: 'No se pudo generar un archivo_r2_key válido' },
@@ -92,14 +110,12 @@ export async function POST(request: Request) {
       );
     }
 
-    const imagenPreviewUrl =
-      tipo === 'preview' ? `/api/preview?key=${encodeURIComponent(key)}` : undefined;
-    const disenoMockupUrl =
-      tipo === 'mockup' ? `/api/preview?key=${encodeURIComponent(key)}` : undefined;
+    const imagenPreviewUrl = `/api/preview?key=${encodeURIComponent(previewKey)}`;
+    const disenoMockupUrl = `/api/preview?key=${encodeURIComponent(mockupKey)}`;
 
     return NextResponse.json({
       success: true,
-      archivo_r2_key: tipo === 'impresion' ? key : undefined,
+      archivo_r2_key: key,
       key,
       imagen_preview_url: imagenPreviewUrl,
       diseno_mockup_url: disenoMockupUrl,

@@ -52,7 +52,7 @@ export default function AdminCatalogo({
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [form, setForm] = useState<Formulario>(VACIO);
   const [loading, setLoading] = useState(false);
-  const [subiendo, setSubiendo] = useState<'preview' | 'mockup' | 'impresion' | null>(null);
+  const [subiendo, setSubiendo] = useState<'impresion' | null>(null);
   const [mensaje, setMensaje] = useState<string | null>(errorInicial || null);
   const [error, setError] = useState<string | null>(null);
 
@@ -97,13 +97,13 @@ export default function AdminCatalogo({
     }
   }
 
-  async function subirArchivo(file: File, tipo: 'preview' | 'mockup' | 'impresion') {
-    setSubiendo(tipo);
+  async function subirArchivo(file: File) {
+    setSubiendo('impresion');
     setError(null);
     try {
       const cuerpo = new FormData();
       cuerpo.append('file', file);
-      cuerpo.append('tipo', tipo);
+      cuerpo.append('tipo', 'impresion');
       const respuesta = await fetch('/api/upload', { method: 'POST', body: cuerpo });
       const data = (await respuesta.json()) as {
         success?: boolean;
@@ -115,19 +115,17 @@ export default function AdminCatalogo({
       if (!respuesta.ok || !data.success) {
         throw new Error(data.error || 'No se pudo subir el archivo');
       }
-      if (tipo === 'impresion') {
-        if (!esArchivoR2KeyValida(data.archivo_r2_key)) {
-          throw new Error('La subida no devolvió un archivo_r2_key válido');
-        }
-        campo('archivo_r2_key', data.archivo_r2_key.trim());
+      if (!esArchivoR2KeyValida(data.archivo_r2_key)) {
+        throw new Error('La subida no devolvió un archivo_r2_key válido');
       }
-      if (tipo === 'preview' && data.imagen_preview_url) {
+      campo('archivo_r2_key', data.archivo_r2_key.trim());
+      if (data.imagen_preview_url) {
         campo('imagen_preview_url', data.imagen_preview_url);
       }
-      if (tipo === 'mockup' && data.diseno_mockup_url) {
+      if (data.diseno_mockup_url) {
         campo('diseno_mockup_url', data.diseno_mockup_url);
       }
-      setMensaje('Archivo subido a Storage. Recuerda guardar el producto.');
+      setMensaje('Archivo procesado. La preview y el asset para mockup fueron generados automáticamente.');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al subir');
     } finally {
@@ -392,54 +390,22 @@ export default function AdminCatalogo({
                 className="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 outline-none ring-amber-500/40 focus:ring-2"
               />
             </label>
-            <label className="block text-sm">
-              <span className="text-slate-400">Vista previa (.webp)</span>
-              <input
-                type="file"
-                accept=".webp,image/webp,.png,.jpg,.jpeg,.svg"
-                disabled={loading || Boolean(subiendo)}
-                onChange={(event) => {
-                  const file = event.target.files?.[0];
-                  if (file) void subirArchivo(file, 'preview');
-                }}
-                className="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-slate-300 file:mr-3 file:rounded-lg file:border-0 file:bg-amber-500 file:px-3 file:py-1 file:text-xs file:font-bold file:text-slate-950"
-              />
-              <span className="mt-1 block truncate text-[11px] text-slate-500">
-                {subiendo === 'preview' ? 'Subiendo vista previa…' : form.imagen_preview_url || 'Sin archivo'}
-              </span>
-            </label>
-            <label className="block text-sm">
+            <label className="block text-sm md:col-span-2">
               <span className="text-slate-400">Archivo de impresión (.png / .svg)</span>
               <input
                 type="file"
-                accept=".png,.svg,.webp,image/png,image/svg+xml"
+                accept=".png,.svg,image/png,image/svg+xml"
                 disabled={loading || Boolean(subiendo)}
                 onChange={(event) => {
                   const file = event.target.files?.[0];
-                  if (file) void subirArchivo(file, 'impresion');
+                  if (file) void subirArchivo(file);
                 }}
                 className="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-slate-300 file:mr-3 file:rounded-lg file:border-0 file:bg-amber-500 file:px-3 file:py-1 file:text-xs file:font-bold file:text-slate-950"
               />
               <span className="mt-1 block truncate text-[11px] text-slate-500">
                 {subiendo === 'impresion'
-                  ? 'Subiendo PNG a Storage…'
+                  ? 'Procesando resolución, generando vista previa y aplicando marca de agua...'
                   : form.archivo_r2_key || 'Se asignará archivo_r2_key al subir'}
-              </span>
-            </label>
-            <label className="block text-sm md:col-span-2">
-              <span className="text-slate-400">Diseño para Mockup (.png transparente / aislado)</span>
-              <input
-                type="file"
-                accept=".png,image/png"
-                disabled={loading || Boolean(subiendo)}
-                onChange={(event) => {
-                  const file = event.target.files?.[0];
-                  if (file) void subirArchivo(file, 'mockup');
-                }}
-                className="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-slate-300 file:mr-3 file:rounded-lg file:border-0 file:bg-amber-500 file:px-3 file:py-1 file:text-xs file:font-bold file:text-slate-950"
-              />
-              <span className="mt-1 block truncate text-[11px] text-slate-500">
-                {subiendo === 'mockup' ? 'Subiendo diseño para mockup…' : form.diseno_mockup_url || 'Sin archivo'}
               </span>
             </label>
             <div className="flex flex-wrap gap-2 md:col-span-2">
