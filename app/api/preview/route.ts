@@ -19,7 +19,7 @@ function headersImagen(contentType = 'image/webp') {
 function crearMarcaDeAgua() {
   const texto = WATERMARK_TEXT.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   return Buffer.from(
-  `<svg width="360" height="180" xmlns="http://www.w3.org/2000/svg"><g transform="rotate(-28 180 90)"><text x="180" y="82" text-anchor="middle" fill="white" fill-opacity="0.5" font-family="Arial, sans-serif" font-size="24" font-weight="700">${texto}</text><text x="180" y="112" text-anchor="middle" fill="white" fill-opacity="0.5" font-family="Arial, sans-serif" font-size="13">PREVIEW PROTEGIDA</text></g></svg>`,
+    `<svg width="450" height="450" xmlns="http://www.w3.org/2000/svg"><g transform="rotate(-28 225 225)" fill="white" fill-opacity="0.5" font-family="Arial, sans-serif" font-weight="700" text-anchor="middle"><text x="225" y="105" font-size="24">${texto}</text><text x="225" y="145" font-size="13">PREVIEW PROTEGIDA</text><text x="225" y="255" font-size="24">${texto}</text><text x="225" y="295" font-size="13">PREVIEW PROTEGIDA</text><text x="225" y="405" font-size="24">${texto}</text></g></svg>`,
   );
 }
 
@@ -75,13 +75,13 @@ export async function GET(request: Request) {
       procesada = esPreview
         ? await imagen
             .flatten({ background: PREVIEW_BACKGROUND })
-            .composite([{ input: crearMarcaDeAgua(), tile: true, blend: 'over', density: 72 }])
+            .composite([{ input: crearMarcaDeAgua(), blend: 'over' }])
             .webp({ quality: 80 })
             .toBuffer()
         : await imagen.webp({ quality: 82 }).toBuffer();
     } catch (error) {
       console.error(`Error procesando preview con Sharp (${key}):`, error);
-      if (!bufferOriginal) {
+      if (!bufferOriginal || !esPreview) {
         procesada = await crearImagenDeError();
         return new NextResponse(new Uint8Array(procesada), {
           status: 502,
@@ -89,7 +89,7 @@ export async function GET(request: Request) {
         });
       }
 
-      procesada = bufferOriginal;
+      throw error;
     }
 
     return new NextResponse(new Uint8Array(procesada), {
