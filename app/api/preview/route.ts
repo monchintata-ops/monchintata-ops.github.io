@@ -47,13 +47,15 @@ export async function GET(request: Request) {
     const objeto = await descargarArchivoPrivado(key);
     const esPreview = key.startsWith('previews/');
     let procesada: Buffer;
+    let bufferOriginal: Buffer | null = null;
 
     try {
       if (!(objeto.bytes instanceof Uint8Array) || objeto.bytes.byteLength === 0) {
         throw new Error('Storage devolvió un buffer de imagen vacío');
       }
 
-      const buffer = Buffer.from(objeto.bytes.buffer, objeto.bytes.byteOffset, objeto.bytes.byteLength);
+      bufferOriginal = Buffer.from(objeto.bytes.buffer, objeto.bytes.byteOffset, objeto.bytes.byteLength);
+      const buffer = bufferOriginal;
       const imagen = sharp(buffer, { density: 300 }).resize({
         width: 450,
         height: 450,
@@ -69,11 +71,15 @@ export async function GET(request: Request) {
         : await imagen.webp({ quality: 82 }).toBuffer();
     } catch (error) {
       console.error(`Error procesando preview con Sharp (${key}):`, error);
-      procesada = await crearImagenDeError();
-      return new NextResponse(new Uint8Array(procesada), {
-        status: 502,
-        headers: headersImagen(),
-      });
+      if (!bufferOriginal) {
+        procesada = await crearImagenDeError();
+        return new NextResponse(new Uint8Array(procesada), {
+          status: 502,
+          headers: headersImagen(),
+        });
+      }
+
+      procesada = bufferOriginal;
     }
 
     return new NextResponse(new Uint8Array(procesada), {
