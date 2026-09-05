@@ -10,6 +10,8 @@ export interface MockupTemplate {
   label: string;
   baseImage: string;
   printArea: MockupArea;
+  isCylindrical?: boolean;
+  curvature?: number;
 }
 
 export const MOCKUP_TEMPLATES: Record<string, MockupTemplate> = {
@@ -36,11 +38,15 @@ export const MOCKUP_TEMPLATES: Record<string, MockupTemplate> = {
     label: 'Taza',
     baseImage: '/mockups/MockupTazaWhite.png',
     printArea: { x: 820, y: 390, width: 1120, height: 1190 },
+    isCylindrical: true,
+    curvature: 0.18,
   },
   termo: {
     id: 'termo',
     label: 'Termo',
     baseImage: '/mockups/MockupThermoNegro.png',
-    printArea: { x: 220, y: 405, width: 330, height: 850 },
+    printArea: { x: 205, y: 405, width: 300, height: 850 },
+    isCylindrical: true,
+    curvature: 0.24,
   },
 };

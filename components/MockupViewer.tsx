@@ -19,6 +19,41 @@ function cargarImagen(src: string): Promise<HTMLImageElement> {
   });
 }
 
+function dibujarDisenoCilindrico(
+  context: CanvasRenderingContext2D,
+  designImage: HTMLImageElement,
+  area: { x: number; y: number; width: number; height: number },
+  curvature: number,
+) {
+  const scale = Math.min(area.width / designImage.width, area.height / designImage.height);
+  const designWidth = designImage.width * scale;
+  const designHeight = designImage.height * scale;
+  const startX = area.x + (area.width - designWidth) / 2;
+  const startY = area.y + (area.height - designHeight) / 2;
+  const strips = 48;
+  const sourceStripWidth = designImage.width / strips;
+  const destinationStripWidth = designWidth / strips;
+
+  for (let index = 0; index < strips; index += 1) {
+    const progress = (index + 0.5) / strips;
+    const edgeDistance = Math.abs(progress * 2 - 1);
+    const drawWidth = destinationStripWidth * (1 - curvature * edgeDistance);
+    const centerX = startX + progress * designWidth;
+
+    context.drawImage(
+      designImage,
+      index * sourceStripWidth,
+      0,
+      sourceStripWidth,
+      designImage.height,
+      centerX - drawWidth / 2,
+      startY,
+      drawWidth,
+      designHeight,
+    );
+  }
+}
+
 export default function MockupViewer({ product, defaultProduct = 'camisa-negra' }: MockupViewerProps) {
   const initialProduct = MOCKUP_TEMPLATES[defaultProduct] ? defaultProduct : 'camisa-negra';
   const [selectedProduct, setSelectedProduct] = useState(initialProduct);
@@ -54,16 +89,25 @@ export default function MockupViewer({ product, defaultProduct = 'camisa-negra' 
         context.drawImage(baseImage, 0, 0, canvas.width, canvas.height);
 
         const { x, y, width, height } = template.printArea;
-        const scale = Math.min(width / designImage.width, height / designImage.height);
-        const designWidth = designImage.width * scale;
-        const designHeight = designImage.height * scale;
-        context.drawImage(
-          designImage,
-          x + (width - designWidth) / 2,
-          y + (height - designHeight) / 2,
-          designWidth,
-          designHeight,
-        );
+        if (template.isCylindrical) {
+          context.save();
+          context.beginPath();
+          context.rect(x, y, width, height);
+          context.clip();
+          dibujarDisenoCilindrico(context, designImage, template.printArea, template.curvature ?? 0.2);
+          context.restore();
+        } else {
+          const scale = Math.min(width / designImage.width, height / designImage.height);
+          const designWidth = designImage.width * scale;
+          const designHeight = designImage.height * scale;
+          context.drawImage(
+            designImage,
+            x + (width - designWidth) / 2,
+            y + (height - designHeight) / 2,
+            designWidth,
+            designHeight,
+          );
+        }
 
         if (template.id === 'camisa-negra' || template.id === 'camisa-blanca') {
           context.save();
