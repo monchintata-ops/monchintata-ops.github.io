@@ -5,14 +5,18 @@ import { FALLBACK_PREVIEW, resolvePreviewUrl } from '@/lib/preview';
 
 export default function ProductPreview({
   src,
+  fallbackSrc,
   alt,
   className,
 }: {
   src?: string | null;
+  fallbackSrc?: string | null;
   alt: string;
   className?: string;
 }) {
-  const initial = resolvePreviewUrl(src);
+  const fallback = resolvePreviewUrl(fallbackSrc);
+  const preview = resolvePreviewUrl(src);
+  const initial = preview === FALLBACK_PREVIEW && fallback !== FALLBACK_PREVIEW ? fallback : preview;
   const [current, setCurrent] = useState(initial);
 
   useEffect(() => {
@@ -27,7 +31,9 @@ export default function ProductPreview({
       loading="lazy"
       decoding="async"
       onError={() => {
-        if (current !== FALLBACK_PREVIEW) {
+        if (current !== fallback && fallback !== FALLBACK_PREVIEW) {
+          setCurrent(fallback);
+        } else if (current !== FALLBACK_PREVIEW) {
           setCurrent(FALLBACK_PREVIEW);
         }
       }}
