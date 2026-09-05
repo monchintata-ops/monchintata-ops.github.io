@@ -10,7 +10,12 @@ export default function ProductCard({ producto }: { producto: Producto }) {
       <div className="relative overflow-hidden bg-slate-950 p-2">
         <ProductPreview
           src={producto.imagen_preview_url}
-          fallbackSrc={producto.diseno_mockup_url || producto.diseno_corte_url || producto.logo_url}
+          fallbackSrc={
+            producto.diseno_mockup_url ||
+            producto.diseno_corte_url ||
+            producto.logo_url ||
+            producto.archivo_r2_key
+          }
           alt={producto.titulo}
           className="aspect-square w-full object-contain transition duration-300 group-hover:scale-105"
         />

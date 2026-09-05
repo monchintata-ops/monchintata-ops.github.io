@@ -9,9 +9,9 @@ export const revalidate = 0;
 const WATERMARK_TEXT = process.env.WATERMARK_TEXT?.trim() || 'CREACIONARTE DTF';
 const PREVIEW_BACKGROUND = '#1E293B';
 
-function headersImagen() {
+function headersImagen(contentType = 'image/webp') {
   return {
-    'Content-Type': 'image/webp',
+    'Content-Type': contentType,
     'Cache-Control': 'no-store, must-revalidate',
   };
 }
@@ -32,7 +32,10 @@ async function crearImagenDeError() {
 
 export async function GET(request: Request) {
   const key = new URL(request.url).searchParams.get('key') || '';
-  if ((!key.startsWith('previews/') && !key.startsWith('mockups/')) || key.includes('..')) {
+  if (
+    (!key.startsWith('previews/') && !key.startsWith('mockups/') && !key.startsWith('disenos/')) ||
+    key.includes('..')
+  ) {
     return NextResponse.json({ error: 'Clave de vista previa inválida' }, { status: 400 });
   }
 
@@ -45,6 +48,13 @@ export async function GET(request: Request) {
 
   try {
     const objeto = await descargarArchivoPrivado(key);
+
+    if (key.startsWith('disenos/')) {
+      return new NextResponse(new Uint8Array(objeto.bytes), {
+        headers: headersImagen(objeto.contentType),
+      });
+    }
+
     const esPreview = key.startsWith('previews/');
     let procesada: Buffer;
     let bufferOriginal: Buffer | null = null;

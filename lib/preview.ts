@@ -8,7 +8,7 @@ export function resolvePreviewUrl(url?: string | null) {
   if (value.startsWith('/api/preview?')) {
     return value;
   }
-  if (value.startsWith('previews/') || value.startsWith('mockups/')) {
+  if (value.startsWith('previews/') || value.startsWith('mockups/') || value.startsWith('disenos/')) {
     return `/api/preview?key=${encodeURIComponent(value)}`;
   }
   return value;
