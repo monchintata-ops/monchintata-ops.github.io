@@ -20,8 +20,31 @@ export default function ProductPreview({
   const [current, setCurrent] = useState(initial);
 
   useEffect(() => {
+    let activo = true;
+    const controller = new AbortController();
     setCurrent(initial);
-  }, [initial]);
+
+    const url = new URL(initial, window.location.href);
+    if (url.origin !== window.location.origin || initial === FALLBACK_PREVIEW) {
+      return () => controller.abort();
+    }
+
+    fetch(url, { cache: 'no-store', signal: controller.signal })
+      .then((response) => {
+        if (!activo || response.ok) return;
+        setCurrent(fallback !== FALLBACK_PREVIEW ? fallback : FALLBACK_PREVIEW);
+      })
+      .catch(() => {
+        if (activo) {
+          setCurrent(fallback !== FALLBACK_PREVIEW ? fallback : FALLBACK_PREVIEW);
+        }
+      });
+
+    return () => {
+      activo = false;
+      controller.abort();
+    };
+  }, [fallback, initial]);
 
   return (
     <img
