@@ -17,13 +17,13 @@ export const MOCKUP_TEMPLATES: Record<string, MockupTemplate> = {
     id: 'camisa-negra',
     label: 'Camisa Negra',
     baseImage: '/mockups/camisa-negra.png',
-    printArea: { x: 1000, y: 850, width: 1330, height: 1415 },
+    printArea: { x: 1065, y: 990, width: 1198, height: 1414 },
   },
   'camisa-blanca': {
     id: 'camisa-blanca',
     label: 'Camisa Blanca',
     baseImage: '/mockups/camisa-blanca.png',
-    printArea: { x: 1000, y: 850, width: 1330, height: 1415 },
+    printArea: { x: 1065, y: 990, width: 1198, height: 1414 },
   },
   gorra: {
     id: 'gorra',

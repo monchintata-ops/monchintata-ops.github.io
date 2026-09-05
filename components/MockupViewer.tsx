@@ -64,6 +64,17 @@ export default function MockupViewer({ product, defaultProduct = 'camisa-negra' 
           designWidth,
           designHeight,
         );
+
+        if (template.id === 'camisa-negra' || template.id === 'camisa-blanca') {
+          context.save();
+          context.beginPath();
+          context.rect(x, y, width, height);
+          context.clip();
+          context.globalCompositeOperation = 'multiply';
+          context.globalAlpha = 0.2;
+          context.drawImage(baseImage, 0, 0, canvas.width, canvas.height);
+          context.restore();
+        }
         setLoading(false);
       })
       .catch((reason: unknown) => {
