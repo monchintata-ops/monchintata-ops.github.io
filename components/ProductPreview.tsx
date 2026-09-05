@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FALLBACK_PREVIEW, resolvePreviewUrl } from '@/lib/preview';
 
 export default function ProductPreview({
@@ -14,6 +14,10 @@ export default function ProductPreview({
 }) {
   const initial = resolvePreviewUrl(src);
   const [current, setCurrent] = useState(initial);
+
+  useEffect(() => {
+    setCurrent(initial);
+  }, [initial]);
 
   return (
     <img
