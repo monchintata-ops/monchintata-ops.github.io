@@ -10,7 +10,7 @@ const PREVIEW_BACKGROUND = '#1E293B';
 function headersImagen() {
   return {
     'Content-Type': 'image/webp',
-    'Cache-Control': 'no-store, max-age=0',
+    'Cache-Control': 'no-store, must-revalidate',
   };
 }
 
