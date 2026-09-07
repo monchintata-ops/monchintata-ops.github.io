@@ -9,9 +9,9 @@ export const revalidate = 0;
 const WATERMARK_TEXT = process.env.WATERMARK_TEXT?.trim() || 'CREACIONARTE DTF';
 const PREVIEW_BACKGROUND = '#1E293B';
 
-function headersImagen() {
+function headersImagen(contentType = 'image/webp') {
   return {
-    'Content-Type': 'image/webp',
+    'Content-Type': contentType,
     'Cache-Control': 'no-store, must-revalidate',
   };
 }
@@ -69,6 +69,12 @@ export async function GET(request: Request) {
         : await imagen.webp({ quality: 82 }).toBuffer();
     } catch (error) {
       console.error(`Error procesando preview con Sharp (${key}):`, error);
+      if (objeto.contentType.startsWith('image/') && objeto.bytes.byteLength > 0) {
+        return new NextResponse(objeto.bytes, {
+          headers: headersImagen(objeto.contentType),
+        });
+      }
+
       procesada = await crearImagenDeError();
     }
 

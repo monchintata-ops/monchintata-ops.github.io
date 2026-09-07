@@ -5,7 +5,7 @@ import { MOCKUP_TEMPLATES } from '@/lib/mockup-config';
 import type { Producto } from '@/lib/types';
 
 interface MockupViewerProps {
-  product: Pick<Producto, 'imagen_preview_url' | 'diseno_mockup_url' | 'diseno_corte_url' | 'logo_url' | 'archivo_r2_key'>;
+  product: Pick<Producto, 'imagen_preview_url' | 'diseno_mockup_url' | 'diseno_corte_url' | 'logo_url'>;
   defaultProduct?: string;
 }
 
@@ -17,29 +17,6 @@ function cargarImagen(src: string): Promise<HTMLImageElement> {
     imagen.onerror = () => reject(new Error(`No se pudo cargar la imagen: ${src}`));
     imagen.src = src;
   });
-}
-
-async function cargarDiseno(
-  primaryUrl: string | null | undefined,
-  originalKey: string | null | undefined,
-  previewUrl: string,
-) {
-  const fuentes = [
-    primaryUrl,
-    originalKey ? `/api/preview?key=${encodeURIComponent(originalKey)}` : null,
-    previewUrl,
-  ].filter((value, index, values): value is string => Boolean(value) && values.indexOf(value) === index);
-
-  let ultimoError: unknown = null;
-  for (const fuente of fuentes) {
-    try {
-      return await cargarImagen(fuente);
-    } catch (error) {
-      ultimoError = error;
-    }
-  }
-
-  throw ultimoError instanceof Error ? ultimoError : new Error('No se pudo cargar el diseño para el mockup.');
 }
 
 function dibujarDisenoCilindrico(
@@ -96,18 +73,11 @@ export default function MockupViewer({ product, defaultProduct = 'camisa-negra' 
     }
 
     const template = MOCKUP_TEMPLATES[selectedProduct] ?? MOCKUP_TEMPLATES['camisa-negra'];
-    const designKey = product.archivo_r2_key?.trim();
+    const designUrl = product.diseno_mockup_url || product.diseno_corte_url || product.logo_url || product.imagen_preview_url;
     setLoading(true);
     setError(null);
 
-    Promise.all([
-      cargarImagen(template.baseImage),
-      cargarDiseno(
-        product.diseno_mockup_url || product.diseno_corte_url || product.logo_url,
-        designKey,
-        product.imagen_preview_url,
-      ),
-    ])
+    Promise.all([cargarImagen(template.baseImage), cargarImagen(designUrl)])
       .then(([baseImage, designImage]) => {
         if (cancelled) return;
 
