@@ -44,6 +44,35 @@ async function crearImagenDeError() {
   return sharp(svg).webp({ quality: 80 }).toBuffer();
 }
 
+async function procesarPreviewConSharp(buffer: Buffer, watermarkKey = '') {
+  const imagen = sharp(buffer, { density: 300, failOn: 'none' });
+  const metadata = await imagen.metadata().catch(() => null);
+
+  if (!metadata || (!metadata.width && !metadata.height)) {
+    throw new Error('La imagen descargada no tiene metadatos válidos');
+  }
+
+  let marcaDeAgua = crearMarcaDeAgua();
+  if (watermarkKey.startsWith('marcas/') && !watermarkKey.includes('..')) {
+    try {
+      const marca = await descargarArchivoPrivado(watermarkKey);
+      if (marca.bytes instanceof Uint8Array && marca.bytes.byteLength > 0) {
+        marcaDeAgua = await prepararMarcaDeAgua(Buffer.from(marca.bytes));
+      }
+    } catch (error) {
+      console.error(`No se pudo leer la marca de agua (${watermarkKey}):`, error);
+    }
+  }
+
+  return sharp(buffer, { density: 300, failOn: 'none' })
+    .rotate()
+    .resize({ width: 450, fit: 'inside', withoutEnlargement: true, background: PREVIEW_BACKGROUND })
+    .flatten({ background: PREVIEW_BACKGROUND })
+    .composite([{ input: marcaDeAgua, tile: true, blend: 'over' }])
+    .webp({ quality: 80 })
+    .toBuffer();
+}
+
 export async function GET(request: Request) {
   const key = new URL(request.url).searchParams.get('key') || '';
   if ((!key.startsWith('disenos/') && !key.startsWith('previews/') && !key.startsWith('mockups/')) || key.includes('..')) {
@@ -59,57 +88,22 @@ export async function GET(request: Request) {
 
   try {
     const objeto = await descargarArchivoPrivado(key);
-    const esPreview = key.startsWith('previews/') || key.startsWith('disenos/');
     const watermarkKey = new URL(request.url).searchParams.get('watermark') || '';
-    let procesada: Buffer;
 
-    try {
-      if (!(objeto.bytes instanceof Uint8Array) || objeto.bytes.byteLength === 0) {
-        throw new Error('Storage devolvió un buffer de imagen vacío');
-      }
-
-      const buffer = Buffer.from(objeto.bytes.buffer, objeto.bytes.byteOffset, objeto.bytes.byteLength);
-      const imagen = sharp(buffer, { density: 300 }).resize({
-        width: 450,
-        height: 450,
-        fit: 'inside',
-        withoutEnlargement: true,
-      });
-      let marcaDeAgua = crearMarcaDeAgua();
-      if (watermarkKey.startsWith('marcas/') && !watermarkKey.includes('..')) {
-        try {
-          const marca = await descargarArchivoPrivado(watermarkKey);
-          if (marca.bytes.byteLength > 0) {
-            marcaDeAgua = await prepararMarcaDeAgua(Buffer.from(marca.bytes));
-          }
-        } catch (error) {
-          console.error(`No se pudo leer la marca de agua (${watermarkKey}):`, error);
-        }
-      }
-
-      procesada = esPreview
-        ? await imagen
-            .flatten({ background: PREVIEW_BACKGROUND })
-            .composite([{ input: marcaDeAgua, tile: true, blend: 'over' }])
-            .webp({ quality: 80 })
-            .toBuffer()
-        : await imagen.webp({ quality: 82 }).toBuffer();
-    } catch (error) {
-      console.error(`Error procesando preview con Sharp (${key}):`, error);
-      if (objeto.contentType.startsWith('image/') && objeto.bytes.byteLength > 0) {
-        return new NextResponse(objeto.bytes, {
-          headers: headersImagen(objeto.contentType),
-        });
-      }
-
-      procesada = await crearImagenDeError();
+    if (!(objeto.bytes instanceof Uint8Array) || objeto.bytes.byteLength === 0) {
+      throw new Error('Storage devolvió un buffer de imagen vacío');
     }
+
+    const buffer = Buffer.from(objeto.bytes.buffer, objeto.bytes.byteOffset, objeto.bytes.byteLength);
+    const procesada = await procesarPreviewConSharp(buffer, watermarkKey);
 
     return new NextResponse(new Uint8Array(procesada), {
       headers: headersImagen(),
     });
   } catch (error) {
-    console.error(`Error al leer preview de Storage (${key}):`, error);
-    return new NextResponse(new Uint8Array(await crearImagenDeError()), { headers: headersImagen() });
+    console.error(`Error al procesar preview con Sharp (${key}):`, error);
+    return new NextResponse(new Uint8Array(await crearImagenDeError()), {
+      headers: headersImagen(),
+    });
   }
 }
