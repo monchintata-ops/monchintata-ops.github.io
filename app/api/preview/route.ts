@@ -19,19 +19,19 @@ function headersImagen(contentType = 'image/webp') {
 function crearMarcaDeAgua() {
   const texto = WATERMARK_TEXT.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   return Buffer.from(
-  `<svg width="360" height="180" xmlns="http://www.w3.org/2000/svg"><g transform="rotate(-28 180 90)"><text x="180" y="82" text-anchor="middle" fill="white" fill-opacity="0.5" font-family="Arial, sans-serif" font-size="24" font-weight="700">${texto}</text><text x="180" y="112" text-anchor="middle" fill="white" fill-opacity="0.5" font-family="Arial, sans-serif" font-size="13">PREVIEW PROTEGIDA</text></g></svg>`,
+    `<svg width="150" height="75" xmlns="http://www.w3.org/2000/svg"><g transform="rotate(-28 75 37.5)"><text x="75" y="34" text-anchor="middle" fill="white" fill-opacity="0.25" font-family="Arial, sans-serif" font-size="12" font-weight="700">${texto}</text><text x="75" y="48" text-anchor="middle" fill="white" fill-opacity="0.25" font-family="Arial, sans-serif" font-size="7">PREVIEW PROTEGIDA</text></g></svg>`,
   );
 }
 
 async function prepararMarcaDeAgua(buffer: Buffer) {
   const resultado = await sharp(buffer)
-    .resize({ width: 360, withoutEnlargement: true })
+    .resize({ width: 150, withoutEnlargement: true })
     .ensureAlpha()
     .raw()
     .toBuffer({ resolveWithObject: true });
 
   for (let indice = 3; indice < resultado.data.length; indice += 4) {
-    resultado.data[indice] = Math.round(resultado.data[indice] * 0.5);
+    resultado.data[indice] = Math.round(resultado.data[indice] * 0.25);
   }
 
   return sharp(resultado.data, { raw: resultado.info }).png().toBuffer();
@@ -68,7 +68,7 @@ async function procesarPreviewConSharp(buffer: Buffer, watermarkKey = '') {
     .rotate()
     .resize({ width: 450, fit: 'inside', withoutEnlargement: true, background: PREVIEW_BACKGROUND })
     .flatten({ background: PREVIEW_BACKGROUND })
-    .composite([{ input: marcaDeAgua, tile: true, blend: 'over' }])
+    .composite([{ input: marcaDeAgua, tile: true, blend: 'overlay' }])
     .webp({ quality: 80 })
     .toBuffer();
 }
