@@ -410,7 +410,7 @@ export default function AdminCatalogo({
               />
             </label>
             <label className="block text-sm md:col-span-2">
-              <span className="text-slate-400">Archivo de impresión (.png / .svg)</span>
+              <span className="text-slate-400">Archivo Original de Impresión (.png / .svg)</span>
               <input
                 type="file"
                 accept=".png,.svg,image/png,image/svg+xml"
@@ -428,7 +428,7 @@ export default function AdminCatalogo({
               </span>
             </label>
             <label className="block text-sm">
-              <span className="text-slate-400">Marca de agua original (opcional)</span>
+              <span className="text-slate-400">Marca de Agua Personalizada (opcional)</span>
               <input
                 type="file"
                 accept=".png,.svg,.webp,image/png,image/svg+xml,image/webp"
@@ -444,7 +444,7 @@ export default function AdminCatalogo({
               </span>
             </label>
             <label className="block text-sm">
-              <span className="text-slate-400">Imagen para mockup (opcional)</span>
+              <span className="text-slate-400">Imagen Transparente para Mockups (opcional)</span>
               <input
                 type="file"
                 accept=".png,.svg,.webp,image/png,image/svg+xml,image/webp"

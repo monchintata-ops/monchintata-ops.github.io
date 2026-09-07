@@ -23,6 +23,20 @@ function crearMarcaDeAgua() {
   );
 }
 
+async function prepararMarcaDeAgua(buffer: Buffer) {
+  const resultado = await sharp(buffer)
+    .resize({ width: 360, withoutEnlargement: true })
+    .ensureAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+
+  for (let indice = 3; indice < resultado.data.length; indice += 4) {
+    resultado.data[indice] = Math.round(resultado.data[indice] * 0.5);
+  }
+
+  return sharp(resultado.data, { raw: resultado.info }).png().toBuffer();
+}
+
 async function crearImagenDeError() {
   const svg = Buffer.from(
     `<svg width="450" height="450" xmlns="http://www.w3.org/2000/svg"><rect width="450" height="450" fill="${PREVIEW_BACKGROUND}"/><text x="225" y="215" text-anchor="middle" fill="#f8fafc" font-family="Arial, sans-serif" font-size="22" font-weight="700">Preview no disponible</text><text x="225" y="250" text-anchor="middle" fill="#fbbf24" font-family="Arial, sans-serif" font-size="15">Intenta recargar el catálogo</text></svg>`,
@@ -32,7 +46,7 @@ async function crearImagenDeError() {
 
 export async function GET(request: Request) {
   const key = new URL(request.url).searchParams.get('key') || '';
-  if ((!key.startsWith('previews/') && !key.startsWith('mockups/')) || key.includes('..')) {
+  if ((!key.startsWith('disenos/') && !key.startsWith('previews/') && !key.startsWith('mockups/')) || key.includes('..')) {
     return NextResponse.json({ error: 'Clave de vista previa inválida' }, { status: 400 });
   }
 
@@ -45,7 +59,8 @@ export async function GET(request: Request) {
 
   try {
     const objeto = await descargarArchivoPrivado(key);
-    const esPreview = key.startsWith('previews/');
+    const esPreview = key.startsWith('previews/') || key.startsWith('disenos/');
+    const watermarkKey = new URL(request.url).searchParams.get('watermark') || '';
     let procesada: Buffer;
 
     try {
@@ -60,10 +75,22 @@ export async function GET(request: Request) {
         fit: 'inside',
         withoutEnlargement: true,
       });
+      let marcaDeAgua = crearMarcaDeAgua();
+      if (watermarkKey.startsWith('marcas/') && !watermarkKey.includes('..')) {
+        try {
+          const marca = await descargarArchivoPrivado(watermarkKey);
+          if (marca.bytes.byteLength > 0) {
+            marcaDeAgua = await prepararMarcaDeAgua(Buffer.from(marca.bytes));
+          }
+        } catch (error) {
+          console.error(`No se pudo leer la marca de agua (${watermarkKey}):`, error);
+        }
+      }
+
       procesada = esPreview
         ? await imagen
             .flatten({ background: PREVIEW_BACKGROUND })
-            .composite([{ input: crearMarcaDeAgua(), tile: true, blend: 'over' }])
+            .composite([{ input: marcaDeAgua, tile: true, blend: 'over' }])
             .webp({ quality: 80 })
             .toBuffer()
         : await imagen.webp({ quality: 82 }).toBuffer();

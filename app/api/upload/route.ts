@@ -3,14 +3,13 @@ import sharp from 'sharp';
 import { adminAutenticado } from '@/lib/adminAuth';
 import { esArchivoR2KeyValida } from '@/lib/r2Key';
 import { storagePrivadoConfigurado, subirArchivoPrivado } from '@/lib/storagePrivado';
+import { subirArchivoPublico } from '@/lib/storagePublico';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 const MAX_BYTES = 25 * 1024 * 1024;
-const PREVIEW_BACKGROUND = '#1E293B';
-
 const TIPOS = {
   impresion: {
     prefix: 'disenos',
@@ -49,20 +48,6 @@ function formatoPermitido(archivo: File, regla: (typeof TIPOS)[keyof typeof TIPO
   const nombre = nombreSeguro(archivo.name);
   return (regla.exts as readonly string[]).includes(extensionDe(nombre)) ||
     (regla.mime as readonly string[]).includes(archivo.type);
-}
-
-async function prepararMarcaDeAgua(buffer: Buffer) {
-  const resultado = await sharp(buffer)
-    .resize({ width: 360, withoutEnlargement: true })
-    .ensureAlpha()
-    .raw()
-    .toBuffer({ resolveWithObject: true });
-
-  for (let indice = 3; indice < resultado.data.length; indice += 4) {
-    resultado.data[indice] = Math.round(resultado.data[indice] * 0.5);
-  }
-
-  return sharp(resultado.data, { raw: resultado.info }).png().toBuffer();
 }
 
 export async function POST(request: Request) {
@@ -140,23 +125,12 @@ export async function POST(request: Request) {
     }
 
     const baseNombre = nombre.replace(/\.[^.]+$/, '');
-    const previewKey = `previews/${timestamp}-${baseNombre}.webp`;
     const mockupKey = `mockups/${timestamp}-${baseNombre}.webp`;
-    const marcaProcesada = watermarkBuffer ? await prepararMarcaDeAgua(watermarkBuffer) : null;
-    const preview = await sharp(buffer, { density: 300 })
-      .resize({ width: 450, fit: 'inside', withoutEnlargement: true })
-      .flatten({ background: PREVIEW_BACKGROUND })
-      .composite(marcaProcesada ? [{ input: marcaProcesada, tile: true, blend: 'over' }] : [])
-      .webp({ quality: 78 })
-      .toBuffer();
     const mockup = await sharp(mockupBuffer, { density: 300 })
       .resize({ width: 1000, withoutEnlargement: true })
       .webp({ quality: 82 })
       .toBuffer();
-    await Promise.all([
-      subirArchivoPrivado({ path: previewKey, body: preview, contentType: 'image/webp' }),
-      subirArchivoPrivado({ path: mockupKey, body: mockup, contentType: 'image/webp' }),
-    ]);
+    const mockupUrl = await subirArchivoPublico({ path: mockupKey, body: mockup, contentType: 'image/webp' });
 
     if (!esArchivoR2KeyValida(key)) {
       return NextResponse.json(
@@ -165,8 +139,10 @@ export async function POST(request: Request) {
       );
     }
 
-    const imagenPreviewUrl = `/api/preview?key=${encodeURIComponent(previewKey)}`;
-    const disenoMockupUrl = `/api/preview?key=${encodeURIComponent(mockupKey)}`;
+    const imagenPreviewUrl = `/api/preview/${key
+      .split('/')
+      .map((segment) => encodeURIComponent(segment))
+      .join('/')}${marcaKey ? `?watermark=${encodeURIComponent(marcaKey)}` : ''}`;
 
     return NextResponse.json({
       success: true,
@@ -174,7 +150,7 @@ export async function POST(request: Request) {
       key,
       watermark_key: marcaKey,
       imagen_preview_url: imagenPreviewUrl,
-      diseno_mockup_url: disenoMockupUrl,
+      diseno_mockup_url: mockupUrl,
     });
   } catch (error) {
     console.error('Error al subir a Storage:', error);
