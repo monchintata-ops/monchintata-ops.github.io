@@ -5,9 +5,11 @@ import type { Producto } from '@/lib/types';
 import { esUuid } from '@/lib/uuid';
 
 const PRODUCTO_COLUMNS =
+  'id, titulo, descripcion, precio, imagen_preview_url, diseno_mockup_url, archivo_r2_key, categoria, creado_en';
+const PRODUCTO_COLUMNS_WITH_CREATOR =
   'id, titulo, descripcion, precio, imagen_preview_url, diseno_mockup_url, archivo_r2_key, categoria, creador_id, creado_en';
 const PRODUCTO_COLUMNS_LEGACY =
-  'id, titulo, descripcion, precio, imagen_preview_url, archivo_r2_key, categoria, creador_id, creado_en';
+  'id, titulo, descripcion, precio, imagen_preview_url, archivo_r2_key, categoria, creado_en';
 
 export type ProductoInput = {
   titulo: string;
@@ -27,7 +29,7 @@ function refrescarCatalogo() {
 }
 
 function payload(input: ProductoInput) {
-  return {
+  const base = {
     titulo: input.titulo.trim(),
     descripcion: input.descripcion?.trim() || null,
     precio: Number(input.precio),
@@ -35,8 +37,13 @@ function payload(input: ProductoInput) {
     imagen_preview_url: input.imagen_preview_url?.trim() || '/placeholder_preview.svg',
     diseno_mockup_url: input.diseno_mockup_url?.trim() || null,
     archivo_r2_key: input.archivo_r2_key.trim(),
-    creador_id: input.creador_id?.trim() || null,
   };
+
+  if (input.creador_id?.trim()) {
+    return { ...base, creador_id: input.creador_id.trim() };
+  }
+
+  return base;
 }
 
 export function validarProductoInput(input: ProductoInput): string | null {
@@ -62,11 +69,28 @@ export async function crearProducto(
     return { producto: null, error: invalido };
   }
 
+  const basePayload = payload(input);
   const { data, error } = await getSupabaseAdmin()
     .from('productos')
-    .insert(payload(input))
+    .insert(basePayload)
     .select(PRODUCTO_COLUMNS)
     .single();
+
+  if (error && /creador_id|column .* does not exist/i.test(error.message)) {
+    const retry = await getSupabaseAdmin()
+      .from('productos')
+      .insert({ ...basePayload })
+      .select(PRODUCTO_COLUMNS)
+      .single();
+
+    if (retry.error) {
+      return { producto: null, error: retry.error.message };
+    }
+
+    const producto = retry.data as Producto;
+    refrescarCatalogo();
+    return { producto, error: null };
+  }
 
   if (error) {
     return { producto: null, error: error.message };
@@ -94,12 +118,30 @@ export async function actualizarProducto(
     return { producto: null, error: invalido };
   }
 
+  const basePayload = payload(input);
   const { data, error } = await getSupabaseAdmin()
     .from('productos')
-    .update(payload(input))
+    .update(basePayload)
     .eq('id', id)
     .select(PRODUCTO_COLUMNS)
     .single();
+
+  if (error && /creador_id|column .* does not exist/i.test(error.message)) {
+    const retry = await getSupabaseAdmin()
+      .from('productos')
+      .update({ ...basePayload })
+      .eq('id', id)
+      .select(PRODUCTO_COLUMNS)
+      .single();
+
+    if (retry.error) {
+      return { producto: null, error: retry.error.message };
+    }
+
+    const producto = retry.data as Producto;
+    refrescarCatalogo();
+    return { producto, error: null };
+  }
 
   if (error) {
     return { producto: null, error: error.message };
