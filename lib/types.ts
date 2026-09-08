@@ -38,6 +38,9 @@ export interface Producto {
   dpi?: number | string | null;
   formato?: string | null;
   creado_en?: string | null;
+  created_at?: string | null;
+  total_ventas?: number | string | null;
+  status?: string | null;
   [extra: string]: unknown;
 }
 

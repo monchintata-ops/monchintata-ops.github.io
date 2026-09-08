@@ -5,10 +5,11 @@ import { Loader2, Lock, LogOut } from 'lucide-react';
 import AdminCatalogo from '@/components/AdminCatalogo';
 import AdminCuentas from '@/components/AdminCuentas';
 import AdminOrdenes from '@/components/AdminOrdenes';
+import AdminAuditoria from '@/components/AdminAuditoria';
 import { ADMIN_SESSION_KEY } from '@/lib/adminConstants';
 import type { Producto } from '@/lib/types';
 
-type TabAdmin = 'catalogo' | 'cuentas' | 'ordenes';
+type TabAdmin = 'catalogo' | 'cuentas' | 'ordenes' | 'inactivos';
 
 export default function AdminGate() {
   const [listo, setListo] = useState(false);
@@ -164,6 +165,7 @@ export default function AdminGate() {
           {(
             [
               ['catalogo', 'Catálogo'],
+              ['inactivos', 'Inactivos'],
               ['cuentas', 'Cuentas Bancarias'],
               ['ordenes', 'Órdenes y Pagos'],
             ] as const
@@ -194,6 +196,7 @@ export default function AdminGate() {
       {tab === 'catalogo' && (
         <AdminCatalogo productosIniciales={productos} errorInicial={errorCatalogo} />
       )}
+      {tab === 'inactivos' && <AdminAuditoria />}
       {tab === 'cuentas' && <AdminCuentas />}
       {tab === 'ordenes' && <AdminOrdenes />}
     </div>

@@ -5,9 +5,9 @@ import type { Producto } from '@/lib/types';
 import { esUuid } from '@/lib/uuid';
 
 const PRODUCTO_LIST_COLUMNS =
-  'id, titulo, descripcion, precio, imagen_preview_url, diseno_mockup_url, archivo_r2_key, categoria, creado_en';
+  'id, titulo, descripcion, precio, imagen_preview_url, diseno_mockup_url, archivo_r2_key, categoria, creado_en, created_at, total_ventas, status';
 const PRODUCTO_LIST_COLUMNS_WITH_CREATOR =
-  'id, titulo, descripcion, precio, imagen_preview_url, diseno_mockup_url, archivo_r2_key, categoria, creador_id, creado_en';
+  'id, titulo, descripcion, precio, imagen_preview_url, diseno_mockup_url, archivo_r2_key, categoria, creador_id, creado_en, created_at, total_ventas, status';
 const PRODUCTO_LIST_COLUMNS_LEGACY =
   'id, titulo, descripcion, precio, imagen_preview_url, archivo_r2_key, categoria, creado_en';
 
@@ -30,16 +30,16 @@ export async function getProductos(): Promise<{ productos: Producto[]; error: st
     .order('titulo', { ascending: true });
   let { data, error } = await consulta;
 
-  if (error && /diseno_mockup_url|creador_id|column .* does not exist/i.test(error.message)) {
+  if (error && /diseno_mockup_url|creador_id|total_ventas|status|created_at|column .* does not exist/i.test(error.message)) {
     const legacy = await clienteCatalogo()
       .from('productos')
       .select(PRODUCTO_LIST_COLUMNS_LEGACY)
       .order('titulo', { ascending: true });
-    data = legacy.data?.map((item) => ({ ...item, diseno_mockup_url: null })) ?? null;
+    data = legacy.data?.map((item) => ({ ...item, diseno_mockup_url: null, created_at: item.creado_en || null, total_ventas: 0, status: 'active' })) ?? null;
     error = legacy.error;
   }
 
-  if (error && /creador_id|column .* does not exist/i.test(error.message) && !data) {
+  if (error && /creador_id|total_ventas|status|created_at|column .* does not exist/i.test(error.message) && !data) {
     const withCreator = await clienteCatalogo()
       .from('productos')
       .select(PRODUCTO_LIST_COLUMNS_WITH_CREATOR)
@@ -52,7 +52,14 @@ export async function getProductos(): Promise<{ productos: Producto[]; error: st
     return { productos: [], error: error.message };
   }
 
-  if (!data?.length) {
+  const normalizados = ((data as Producto[]) ?? []).map((item) => ({
+    ...item,
+    created_at: item.created_at ?? item.creado_en ?? null,
+    total_ventas: Number(item.total_ventas ?? 0),
+    status: item.status ?? 'active',
+  }));
+
+  if (!normalizados.length) {
     await ensureProductoPrueba();
     const segundo = await clienteCatalogo()
       .from('productos')
@@ -63,10 +70,18 @@ export async function getProductos(): Promise<{ productos: Producto[]; error: st
       return { productos: [], error: segundo.error.message };
     }
 
-    return { productos: (segundo.data as Producto[]) ?? [], error: null };
+    return {
+      productos: (((segundo.data as Producto[]) ?? []).map((item) => ({
+        ...item,
+        created_at: item.created_at ?? item.creado_en ?? null,
+        total_ventas: Number(item.total_ventas ?? 0),
+        status: item.status ?? 'active',
+      }))) ?? [],
+      error: null,
+    };
   }
 
-  return { productos: (data as Producto[]) ?? [], error: null };
+  return { productos: normalizados, error: null };
 }
 
 export async function getProductoDetalle(
