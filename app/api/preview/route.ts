@@ -9,9 +9,9 @@ export const revalidate = 0;
 const WATERMARK_TEXT = process.env.WATERMARK_TEXT?.trim() || 'CREACIONARTE DTF';
 const PREVIEW_BACKGROUND = '#1E293B';
 
-function headersImagen(contentType = 'image/webp') {
+function headersImagen() {
   return {
-    'Content-Type': contentType,
+    'Content-Type': 'image/webp',
     'Cache-Control': 'no-store, must-revalidate',
   };
 }
@@ -44,7 +44,7 @@ async function crearImagenDeError() {
   return sharp(svg).webp({ quality: 80 }).toBuffer();
 }
 
-async function procesarPreviewConSharp(buffer: Buffer, watermarkKey = '') {
+async function procesarPreviewConSharp(buffer: Buffer, watermarkKey: string, aplicarMarca: boolean) {
   const imagen = sharp(buffer, { density: 300, failOn: 'none' });
   const metadata = await imagen.metadata().catch(() => null);
 
@@ -53,7 +53,7 @@ async function procesarPreviewConSharp(buffer: Buffer, watermarkKey = '') {
   }
 
   let marcaDeAgua = crearMarcaDeAgua();
-  if (watermarkKey.startsWith('marcas/') && !watermarkKey.includes('..')) {
+  if (aplicarMarca && watermarkKey.startsWith('marcas/') && !watermarkKey.includes('..')) {
     try {
       const marca = await descargarArchivoPrivado(watermarkKey);
       if (marca.bytes instanceof Uint8Array && marca.bytes.byteLength > 0) {
@@ -64,9 +64,15 @@ async function procesarPreviewConSharp(buffer: Buffer, watermarkKey = '') {
     }
   }
 
-  return sharp(buffer, { density: 300, failOn: 'none' })
+  const redimensionada = sharp(buffer, { density: 300, failOn: 'none' })
     .rotate()
-    .resize({ width: 450, fit: 'inside', withoutEnlargement: true, background: PREVIEW_BACKGROUND })
+    .resize({ width: 450, fit: 'inside', withoutEnlargement: true });
+
+  if (!aplicarMarca) {
+    return redimensionada.webp({ quality: 82 }).toBuffer();
+  }
+
+  return redimensionada
     .flatten({ background: PREVIEW_BACKGROUND })
     .composite([{ input: marcaDeAgua, tile: true, blend: 'overlay' }])
     .webp({ quality: 80 })
@@ -75,7 +81,7 @@ async function procesarPreviewConSharp(buffer: Buffer, watermarkKey = '') {
 
 export async function GET(request: Request) {
   const key = new URL(request.url).searchParams.get('key') || '';
-  if ((!key.startsWith('disenos/') && !key.startsWith('previews/') && !key.startsWith('mockups/')) || key.includes('..')) {
+  if ((!key.startsWith('previews/') && !key.startsWith('mockups/')) || key.includes('..')) {
     return NextResponse.json({ error: 'Clave de vista previa inválida' }, { status: 400 });
   }
 
@@ -95,7 +101,7 @@ export async function GET(request: Request) {
     }
 
     const buffer = Buffer.from(objeto.bytes.buffer, objeto.bytes.byteOffset, objeto.bytes.byteLength);
-    const procesada = await procesarPreviewConSharp(buffer, watermarkKey);
+    const procesada = await procesarPreviewConSharp(buffer, watermarkKey, key.startsWith('previews/'));
 
     return new NextResponse(new Uint8Array(procesada), {
       headers: headersImagen(),
