@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import sharp from 'sharp';
-import { adminAutenticado } from '@/lib/adminAuth';
+import { usuarioAutorizadoParaSubir } from '@/lib/roles';
 import { esArchivoR2KeyValida } from '@/lib/r2Key';
 import { storagePrivadoConfigurado, subirArchivoPrivado } from '@/lib/storagePrivado';
 import { subirArchivoPublico } from '@/lib/storagePublico';
@@ -9,7 +9,8 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-const MAX_BYTES = 25 * 1024 * 1024;
+const MAX_BYTES_MAESTRO = 25 * 1024 * 1024;
+const MAX_BYTES_MOCKUP = 3 * 1024 * 1024;
 const TIPOS = {
   impresion: {
     prefix: 'disenos',
@@ -51,7 +52,7 @@ function formatoPermitido(archivo: File, regla: (typeof TIPOS)[keyof typeof TIPO
 }
 
 export async function POST(request: Request) {
-  if (!adminAutenticado()) {
+  if (!(await usuarioAutorizadoParaSubir())) {
     return NextResponse.json({ success: false, error: 'Acceso no autorizado' }, { status: 401 });
   }
 
@@ -72,9 +73,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Falta el archivo' }, { status: 400 });
     }
 
-    if (archivo.size > MAX_BYTES) {
+    if (archivo.size > MAX_BYTES_MAESTRO) {
       return NextResponse.json(
-        { success: false, error: 'El archivo supera 25 MB' },
+        { success: false, error: 'El archivo maestro supera 25 MB' },
         { status: 400 }
       );
     }
@@ -93,12 +94,14 @@ export async function POST(request: Request) {
       ['watermark', marca, TIPOS.marca],
       ['mockup', mockupArchivo, TIPOS.mockup],
     ] as const) {
-      if (archivoOpcional instanceof File &&
-        (archivoOpcional.size > MAX_BYTES || !formatoPermitido(archivoOpcional, reglaOpcional))) {
-        return NextResponse.json(
-          { success: false, error: `Formato o tamaño no permitido para ${nombreCampo}` },
-          { status: 400 }
-        );
+      if (archivoOpcional instanceof File) {
+        const limite = nombreCampo === 'mockup' ? MAX_BYTES_MOCKUP : MAX_BYTES_MAESTRO;
+        if (archivoOpcional.size > limite || !formatoPermitido(archivoOpcional, reglaOpcional)) {
+          return NextResponse.json(
+            { success: false, error: `Formato o tamaño no permitido para ${nombreCampo}` },
+            { status: 400 }
+          );
+        }
       }
     }
 

@@ -22,6 +22,9 @@ type Formulario = {
   archivo_r2_key: string;
 };
 
+const MAX_BYTES_MAESTRO = 25 * 1024 * 1024;
+const MAX_BYTES_MOCKUP = 3 * 1024 * 1024;
+
 const VACIO: Formulario = {
   titulo: '',
   categoria: '',
@@ -110,10 +113,20 @@ export default function AdminCatalogo({
     }
   }
 
+  function validarTamanosArchivos(archivos: ArchivosPendientes) {
+    if (archivos.impresion && archivos.impresion.size > MAX_BYTES_MAESTRO) {
+      throw new Error('El archivo maestro supera 25 MB.');
+    }
+    if (archivos.mockup && archivos.mockup.size > MAX_BYTES_MOCKUP) {
+      throw new Error('El mockup supera 3 MB.');
+    }
+  }
+
   async function subirArchivos(archivos: ArchivosPendientes) {
     if (!archivos.impresion) {
       throw new Error('Selecciona el archivo de impresión HD antes de procesar.');
     }
+    validarTamanosArchivos(archivos);
     setSubiendo('impresion');
     setError(null);
     try {
@@ -417,6 +430,13 @@ export default function AdminCatalogo({
                 disabled={loading || Boolean(subiendo)}
                 onChange={(event) => {
                   const file = event.target.files?.[0];
+                  if (file && file.size > MAX_BYTES_MAESTRO) {
+                    setError('El archivo maestro supera 25 MB.');
+                    event.target.value = '';
+                    setArchivosPendientes((prev) => ({ ...prev, impresion: null }));
+                    return;
+                  }
+                  setError(null);
                   setArchivosPendientes((prev) => ({ ...prev, impresion: file || null }));
                 }}
                 className="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-slate-300 file:mr-3 file:rounded-lg file:border-0 file:bg-amber-500 file:px-3 file:py-1 file:text-xs file:font-bold file:text-slate-950"
@@ -451,6 +471,13 @@ export default function AdminCatalogo({
                 disabled={loading || Boolean(subiendo)}
                 onChange={(event) => {
                   const file = event.target.files?.[0];
+                  if (file && file.size > MAX_BYTES_MOCKUP) {
+                    setError('El mockup supera 3 MB.');
+                    event.target.value = '';
+                    setArchivosPendientes((prev) => ({ ...prev, mockup: null }));
+                    return;
+                  }
+                  setError(null);
                   setArchivosPendientes((prev) => ({ ...prev, mockup: file || null }));
                 }}
                 className="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-slate-300 file:mr-3 file:rounded-lg file:border-0 file:bg-amber-500 file:px-3 file:py-1 file:text-xs file:font-bold file:text-slate-950"

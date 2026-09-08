@@ -2,6 +2,8 @@ export const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export type MetodoPago = 'transferencia' | 'paypal';
 export type EstadoPago = 'pendiente_verificacion' | 'completado' | 'rechazado' | 'pagado';
+export type UsuarioRol = 'admin' | 'designer' | 'customer';
+export type UsuarioEstado = 'pending' | 'active' | 'suspended';
 
 export interface CuentaBancaria {
   id: string;
@@ -14,6 +16,13 @@ export interface CuentaBancaria {
   creado_en?: string | null;
 }
 
+export interface PerfilUsuario {
+  id?: string;
+  rol: UsuarioRol;
+  estado: UsuarioEstado;
+  max_storage_mb: number;
+}
+
 export interface Producto {
   id: string;
   titulo: string;
@@ -24,6 +33,7 @@ export interface Producto {
   logo_url?: string | null;
   categoria?: string | null;
   archivo_r2_key?: string | null;
+  creador_id?: string | null;
   descripcion?: string | null;
   dpi?: number | string | null;
   formato?: string | null;

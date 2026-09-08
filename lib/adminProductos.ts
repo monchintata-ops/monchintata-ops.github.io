@@ -5,9 +5,9 @@ import type { Producto } from '@/lib/types';
 import { esUuid } from '@/lib/uuid';
 
 const PRODUCTO_COLUMNS =
-  'id, titulo, descripcion, precio, imagen_preview_url, diseno_mockup_url, archivo_r2_key, categoria, creado_en';
+  'id, titulo, descripcion, precio, imagen_preview_url, diseno_mockup_url, archivo_r2_key, categoria, creador_id, creado_en';
 const PRODUCTO_COLUMNS_LEGACY =
-  'id, titulo, descripcion, precio, imagen_preview_url, archivo_r2_key, categoria, creado_en';
+  'id, titulo, descripcion, precio, imagen_preview_url, archivo_r2_key, categoria, creador_id, creado_en';
 
 export type ProductoInput = {
   titulo: string;
@@ -17,6 +17,7 @@ export type ProductoInput = {
   imagen_preview_url?: string;
   diseno_mockup_url?: string;
   archivo_r2_key: string;
+  creador_id?: string | null;
 };
 
 function refrescarCatalogo() {
@@ -34,6 +35,7 @@ function payload(input: ProductoInput) {
     imagen_preview_url: input.imagen_preview_url?.trim() || '/placeholder_preview.svg',
     diseno_mockup_url: input.diseno_mockup_url?.trim() || null,
     archivo_r2_key: input.archivo_r2_key.trim(),
+    creador_id: input.creador_id?.trim() || null,
   };
 }
 
