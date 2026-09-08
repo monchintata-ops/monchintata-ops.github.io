@@ -3,6 +3,9 @@ import Header from '@/components/Header';
 import CheckoutModal from '@/components/CheckoutModal';
 import ProductGallery from '@/components/ProductGallery';
 import { getProductoDetalle } from '@/lib/productos';
+import { descripcionSeoProducto, hashtagsProducto, jsonLdProducto, slugProducto } from '@/lib/seo';
+import { resolvePreviewUrl } from '@/lib/preview';
+import { urlAbsoluta } from '@/lib/siteUrl';
 import type { Metadata } from 'next';
 
 export const dynamic = 'force-dynamic';
@@ -19,15 +22,41 @@ function nombrePng(titulo: string) {
 export async function generateMetadata({ params }: ProductoPageProps): Promise<Metadata> {
   const { producto, error } = await getProductoDetalle(params.id);
 
-  if (error) {
-    return { title: 'Detalle de producto | CreacionArte' };
+  if (error || !producto) {
+    return {
+      title: 'Detalle de producto | CreacionArte',
+      description: 'Descarga diseños vectoriales y PNGs listos para impresión DTF, UV-DTF y sublimación.',
+    };
   }
 
-  if (!producto) {
-    return { title: 'Producto no encontrado | CreacionArte' };
-  }
+  const descripcion = descripcionSeoProducto(producto);
+  const imageUrl = urlAbsoluta(resolvePreviewUrl(producto.imagen_preview_url));
+  const canonicalUrl = urlAbsoluta(`/producto/${producto.id}`);
+  const title = `${producto.titulo} | Diseños e Impresión DTF - CreacionArte`;
+  const hashtags = hashtagsProducto(producto);
 
-  return { title: `${producto.titulo} | CreacionArte` };
+  return {
+    title,
+    description: descripcion,
+    alternates: {
+      canonical: canonicalUrl,
+    },
+    keywords: [...hashtags, slugProducto(producto.titulo), 'DTF', 'UV-DTF', 'sublimación'],
+    openGraph: {
+      title,
+      description: descripcion,
+      url: canonicalUrl,
+      siteName: 'CreacionArte',
+      type: 'website',
+      images: [{ url: imageUrl, width: 1200, height: 1200, alt: producto.titulo }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description: descripcion,
+      images: [imageUrl],
+    },
+  };
 }
 
 export default async function ProductoDetallePage({ params }: ProductoPageProps) {
@@ -38,6 +67,7 @@ export default async function ProductoDetallePage({ params }: ProductoPageProps)
     typeof producto?.descripcion === 'string' && producto.descripcion.trim()
       ? producto.descripcion
       : null;
+  const canonicalUrl = producto ? urlAbsoluta(`/producto/${producto.id}`) : undefined;
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-slate-950 text-slate-100">
@@ -62,10 +92,17 @@ export default async function ProductoDetallePage({ params }: ProductoPageProps)
             </p>
           </div>
         ) : (
-          <div className="grid min-w-0 grid-cols-1 gap-8 lg:grid-cols-2">
-            <div className="flex min-h-[320px] items-center justify-center overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 p-6 lg:min-h-[520px]">
-              <ProductGallery product={producto} title={producto.titulo} />
-            </div>
+          <>
+            <script
+              type="application/ld+json"
+              dangerouslySetInnerHTML={{
+                __html: JSON.stringify(jsonLdProducto(producto, canonicalUrl)),
+              }}
+            />
+            <div className="grid min-w-0 grid-cols-1 gap-8 lg:grid-cols-2">
+              <div className="flex min-h-[320px] items-center justify-center overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 p-6 lg:min-h-[520px]">
+                <ProductGallery product={producto} title={producto.titulo} />
+              </div>
 
             <div className="flex min-w-0 flex-col justify-center gap-6">
               <div className="min-w-0">
@@ -113,11 +150,12 @@ export default async function ProductoDetallePage({ params }: ProductoPageProps)
                 nombreArchivo={nombrePng(producto.titulo)}
               />
 
-              <p className="text-xs text-slate-500">
-                El PNG original no se expone en el catálogo. Tras transferencia verificada o pago PayPal se entrega con una URL firmada de 15 minutos.
-              </p>
+                <p className="text-xs text-slate-500">
+                  El PNG original no se expone en el catálogo. Tras transferencia verificada o pago PayPal se entrega con una URL firmada de 15 minutos.
+                </p>
+              </div>
             </div>
-          </div>
+          </>
         )}
       </section>
     </main>

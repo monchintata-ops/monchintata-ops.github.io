@@ -1,9 +1,22 @@
 import './globals.css';
 import type { Metadata } from 'next';
+import { urlPublicaSitio } from '@/lib/siteUrl';
 
 export const metadata: Metadata = {
+  metadataBase: new URL(urlPublicaSitio()),
   title: 'CreacionArte - Catálogo DTF & UV-DTF',
   description: 'Descarga diseños vectoriales y PNGs listos para impresión DTF',
+  openGraph: {
+    title: 'CreacionArte - Catálogo DTF & UV-DTF',
+    description: 'Descarga diseños vectoriales y PNGs listos para impresión DTF',
+    siteName: 'CreacionArte',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'CreacionArte - Catálogo DTF & UV-DTF',
+    description: 'Descarga diseños vectoriales y PNGs listos para impresión DTF',
+  },
 };
 
 export default function RootLayout({
