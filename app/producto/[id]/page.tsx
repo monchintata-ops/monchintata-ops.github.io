@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 interface ProductoPageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 function nombrePng(titulo: string) {
@@ -20,7 +20,8 @@ function nombrePng(titulo: string) {
 }
 
 export async function generateMetadata({ params }: ProductoPageProps): Promise<Metadata> {
-  const { producto, error } = await getProductoDetalle(params.id);
+  const { id } = await params;
+  const { producto, error } = await getProductoDetalle(id);
 
   if (error || !producto) {
     return {
@@ -60,7 +61,8 @@ export async function generateMetadata({ params }: ProductoPageProps): Promise<M
 }
 
 export default async function ProductoDetallePage({ params }: ProductoPageProps) {
-  const { producto, error } = await getProductoDetalle(params.id);
+  const { id } = await params;
+  const { producto, error } = await getProductoDetalle(id);
   const dpi = producto?.dpi ? String(producto.dpi) : '300 DPI';
   const formato = producto?.formato ? String(producto.formato) : 'DTF / UV-DTF';
   const descripcion =
