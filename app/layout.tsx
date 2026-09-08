@@ -1,9 +1,9 @@
 import './globals.css';
 import type { Metadata } from 'next';
-import { urlPublicaSitio } from '@/lib/siteUrl';
+import { metadataBase } from '@/lib/seo';
 
 export const metadata: Metadata = {
-  metadataBase: new URL(urlPublicaSitio()),
+  metadataBase,
   title: 'CreacionArte - Catálogo DTF & UV-DTF',
   description: 'Descarga diseños vectoriales y PNGs listos para impresión DTF',
   openGraph: {

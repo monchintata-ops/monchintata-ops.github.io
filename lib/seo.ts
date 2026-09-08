@@ -1,5 +1,9 @@
 import type { Producto } from '@/lib/types';
 
+const raw = process.env.NEXT_PUBLIC_SITE_URL || process.env.VERCEL_URL || 'creacionarte-store.vercel.app';
+const urlStr = raw.startsWith('http') ? raw : `https://${raw}`;
+export const metadataBase = new URL(urlStr);
+
 const CATEGORIAS = {
   dtf: ['DTF', 'Sublimacion', 'VectoresTextiles', 'CreacionArte'],
   uvdtf: ['UV-DTF', 'Transfer', 'ImpresionDigital', 'CreacionArte'],
@@ -53,8 +57,9 @@ export function descripcionSeoProducto(producto: Pick<Producto, 'titulo' | 'desc
 
 export function jsonLdProducto(producto: Producto, canonicalUrl?: string) {
   const image = producto.imagen_preview_url ? producto.imagen_preview_url : '/placeholder_preview.svg';
-  const imageUrl = image.startsWith('http') ? image : `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}${image.startsWith('/') ? image : `/${image}`}`;
+  const imageUrl = image.startsWith('http') ? image : `${metadataBase.origin}${image.startsWith('/') ? image : `/${image}`}`;
   const precio = Number(producto.precio ?? 0);
+  const productoUrl = canonicalUrl || `${metadataBase.origin}/producto/${producto.id}`;
 
   return {
     '@context': 'https://schema.org',
@@ -63,7 +68,7 @@ export function jsonLdProducto(producto: Producto, canonicalUrl?: string) {
     image: imageUrl,
     description: descripcionSeoProducto(producto),
     sku: producto.id,
-    url: canonicalUrl || `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/producto/${producto.id}`,
+    url: productoUrl,
     brand: {
       '@type': 'Brand',
       name: 'CreacionArte',
@@ -73,7 +78,7 @@ export function jsonLdProducto(producto: Producto, canonicalUrl?: string) {
       priceCurrency: 'USD',
       price: Number.isFinite(precio) ? precio : 0,
       availability: 'https://schema.org/InStock',
-      url: canonicalUrl || `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/producto/${producto.id}`,
+      url: productoUrl,
     },
   };
 }
